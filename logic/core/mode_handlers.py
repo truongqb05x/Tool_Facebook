@@ -505,7 +505,7 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             
             if result == "BLOCK_EDIT_DETECTED":
                 print(f"[{uid}]  Phát hiện comment bị từ chối/chờ duyệt. Xóa khỏi danh sách tài khoản được chọn trong UI chạy...")
-                #print(f"[{uid}] UI_REMOVE|{uid}")  # Tín hiệu để C# xóa account khỏi list chờ trong UI
+                print(f"[{uid}] UI_REMOVE|{uid}")  # Tín hiệu để C# xóa account khỏi list chờ trong UI
                 # Không gọi remove_dead_account(cookie_line) để không xóa trong file
                 BLOCKED_ACCOUNTS.add(uid)
                 found_and_commented = False
@@ -545,16 +545,16 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         print(f"[{uid}]  Bắt đầu chạy Hành động sau bình luận (Action After Post)...")
         cfg = task_config.get("ConfigAfterPost", {})
         if cfg.get("IsScrollFeed"):
-            print(f"[{uid}]  Thực hiện hành động Lướt Newfeed")
+            #print(f"[{uid}]  Thực hiện hành động Lướt Newfeed")
             feed_time = cfg.get("ScrollTimeMax", 60)
             warm_up_account(driver, uid, warmup_time=feed_time, cfg=cfg)
         if cfg.get("IsReadNotifications"):
-            print(f"[{uid}]  Thực hiện hành động Đọc thông báo")
+            #print(f"[{uid}]  Thực hiện hành động Đọc thông báo")
             count = cfg.get("ReadNotificationsCount", 1)
             for _ in range(count):
                 read_one_random_notification(driver, uid)
         if cfg.get("IsChatWithEachOther"):
-            print(f"[{uid}]  Thực hiện hành động Nhắn tin 2 chiều")
+            #print(f"[{uid}]  Thực hiện hành động Nhắn tin 2 chiều")
             run_two_way_chat(driver=driver, uid=uid, task_config=task_config)
 
     return True, is_dead, driver

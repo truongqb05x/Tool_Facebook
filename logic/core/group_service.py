@@ -22,14 +22,10 @@ from actions.join_groups import join_single_group
 import string
 
 def generate_auto_comment():
-    words = []
-    for _ in range(random.randint(6, 15)):
-        word_len = random.randint(3, 7)
-        word = ''.join(random.choices(string.ascii_lowercase, k=word_len))
-        words.append(word)
-    sentence = " ".join(words).capitalize()
+    length = random.randint(5, 10)
+    chars = ''.join(random.choices(string.ascii_lowercase, k=length)).capitalize()
     icons = ["👍", "❤️", "🥰", "😍", "🎉", "🔥", "✨", "💯", "😊", "😁", "⭐", "🍀", "🌸", "💐", "🎀", "💖", "💗"]
-    return f"{sentence} {random.choice(icons)}"
+    return f"{chars} {random.choice(icons)}"
 
 def close_obstructing_modals(driver, uid):
     try:
@@ -355,6 +351,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             except:
                                 pass
                             
+                            target_edit_content = "Check inbox nhé"
                             if task_config:
                                 if task_config.get("IsImageCommentAutoGenerate", False):
                                     content = generate_auto_comment()
@@ -363,11 +360,18 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     if comment_list:
                                         if task_config.get("IsSequentialComment"):
                                             idx = comment_index % len(comment_list)
-                                            content = comment_list[idx]
+                                            target_edit_content = comment_list[idx]
                                         else:
-                                            content = random.choice(comment_list)
+                                            target_edit_content = random.choice(comment_list)
                                     else:
-                                        content = "Check inbox nhé"
+                                        target_edit_content = "Check inbox nhé"
+                                    
+                                    if is_edit_comment == "yes" and not is_image_comment:
+                                        with FILE_LOCK:
+                                            stt_lines = read_file("resources/stt.txt")
+                                        content = random.choice(stt_lines) if stt_lines else "Up bài giúp b nhé"
+                                    else:
+                                        content = target_edit_content
                             else:
                                 if is_edit_comment == "no":
                                     content = "Check inbox nhé"
@@ -487,6 +491,48 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             if _status == "MEMBERSHIP_MODAL":
                                 return False
                             # ========================================================
+                            
+                            # ================= START EDIT & RE-COMMENT =================
+                            if is_edit_comment == "yes" and not is_image_comment:
+                                try:
+                                    print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Direct)...")
+                                    comment_text_xpath = f"//*[contains(text(), '{content}')]"
+                                    posted_comment = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, comment_text_xpath)))
+                                    
+                                    actions = ActionChains(driver)
+                                    actions.move_to_element(posted_comment).perform()
+                                    time.sleep(1)
+                                    
+                                    menu_xpath = "//div[@aria-label='Chỉnh sửa hoặc xóa bình luận này' or @aria-label='Edit or delete this comment']"
+                                    menu_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, menu_xpath)))
+                                    menu_btn.click()
+                                    time.sleep(2)
+                                    
+                                    edit_xpath = "//span[contains(text(), 'Chỉnh sửa') or contains(text(), 'Edit')]"
+                                    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, edit_xpath))).click()
+                                    time.sleep(3)
+                                    
+                                    box = driver.switch_to.active_element
+                                    box.send_keys(Keys.CONTROL, "a")
+                                    box.send_keys(Keys.BACKSPACE)
+                                    time.sleep(1)
+                                    
+                                    new_content = "Check inbox nhé"
+                                    if task_config:
+                                        new_content = target_edit_content
+                                    else:
+                                        if os.path.exists(target_content_file):
+                                            with open(target_content_file, "r", encoding="utf-8-sig") as f:
+                                                new_content = f.read().strip()
+                                    
+                                    type_human_like(driver, new_content, element=box)
+                                    time.sleep(1)
+                                    box.send_keys(Keys.ENTER)
+                                    print(f"[{uid}] ✅ Đã sửa comment thành công.")
+                                    time.sleep(3)
+                                except Exception as e_edit:
+                                    print(f"[{uid}] ⚠️ Lỗi quy trình sửa comment: {e_edit}")
+                            # ===========================================================
 
                             comment_box_found = True
                             break
@@ -837,11 +883,14 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                     box.send_keys(Keys.BACKSPACE)
                     time.sleep(1)
                     
-                    # LẤY TOÀN BỘ NỘI DUNG FILE ĐÍCH
+                    # LẤY TOÀN BỘ NỘI DUNG FILE ĐÍCH Hoặc TỪ CONFIG
                     new_content = "Check inbox nhé" # Fallback
-                    if os.path.exists(target_content_file):
-                        with open(target_content_file, "r", encoding="utf-8-sig") as f:
-                            new_content = f.read().strip()
+                    if task_config:
+                        new_content = target_edit_content
+                    else:
+                        if os.path.exists(target_content_file):
+                            with open(target_content_file, "r", encoding="utf-8-sig") as f:
+                                new_content = f.read().strip()
                     
                     type_human_like(driver, new_content, element=box)
                     time.sleep(1)
