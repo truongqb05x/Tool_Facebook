@@ -481,7 +481,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                 time.sleep(1)
                                 type_human_like(driver, content, element=None)
                                 ActionChains(driver).send_keys(Keys.ENTER).perform()
-                                print(f"[{uid}] ✅ Đã gửi comment text trực tiếp.")
+                                #print(f"[{uid}] ✅ Đã gửi comment text trực tiếp.")
                                 time.sleep(5)
                             
                             # ===== KIỂM TRA BỊ CHẶN / CHỜ DUYỆT (DIRECT MODE) =====
@@ -495,7 +495,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             # ================= START EDIT & RE-COMMENT =================
                             if is_edit_comment == "yes" and not is_image_comment:
                                 try:
-                                    print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Direct)...")
+                                    #print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Direct)...")
                                     comment_text_xpath = f"//*[contains(text(), '{content}')]"
                                     posted_comment = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, comment_text_xpath)))
                                     
@@ -551,104 +551,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 print(f"[{uid}] ⚠️ Không tìm thấy ô comment nào trực tiếp trong nhóm này.")
                 return False
         # --- END DIRECT MODE ---
-        for attempt in range(2): # Thử tối đa 2 lần (lần 2 sẽ reload)
-            if collected_links: break # Bỏ qua quét link nếu đã có từ fallback
-            if attempt > 0:
-                print(f"[{uid}] 🔄 Không tìm thấy bài viết, thử reload trang và quét lại lần {attempt + 1}...")
-                driver.refresh()
-                time.sleep(10)
 
-            consecutive_skip_count = 0
-            for scan_idx in range(20): # Thử 20 lần cuộn
-                # Cuộn xuống
-                scroll_dist = random.randint(400, 600)
-                driver.execute_script(f"window.scrollBy(0, {scroll_dist});")
-                time.sleep(4) # Chờ load content
-                
-                candidates = driver.find_elements(By.CSS_SELECTOR, 'a[role="link"]:not([data-scanned="true"])')
-                
-                for cand in candidates:
-                    try:
-                        text = cand.text or ""
-                        href = cand.get_attribute('href') or ""
-                        aria_label = cand.get_attribute('aria-label') or ""
-                        
-                        # Pattern thời gian mở rộng
-                        time_regex = r'(\d+\s*(phút|giờ|ngày|tuần|tháng|năm|h|d|w|m|y|min|mins|hour|hours|day|days|week|weeks|month|months|year|years)|vừa xong|Hôm qua|Just now|Yesterday)'
-                        is_time = re.search(time_regex, text, re.I)
-                        
-                        # Nhận diện thêm bằng aria-label Tiếng Anh (vd: "Monday, September 21, 2026 at 7:27 AM")
-                        is_english_time = re.search(r'(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Yesterday|Just now).+(AM|PM|at)', aria_label, re.I)
-                        
-                        is_post_url = href and ("/posts/" in href or "/permalink/" in href or "story_fbid" in href or "comment_id=" in href)
-
-                        if is_time or is_english_time or is_post_url:
-                            # KIỂM TRA ĐỘ TƯƠI CỦA BÀI VIẾT (Chỉ lấy bài < 24 giờ)
-                            is_young = True
-                            
-                            if text:
-                                age_text = text.lower()
-                                # Các từ khóa chỉ thời gian cũ (> 24h)
-                                old_keywords = ["ngày", "tháng", "năm", "hôm qua", "tuần", "day", "days", "yesterday", "week", "weeks", "month", "months", "year", "years"]
-                                if any(kw in age_text for kw in old_keywords):
-                                    is_young = False
-                                # Kiểm tra ký hiệu 'd', 'w', 'y' (days, weeks, years) trong tiếng Anh
-                                elif re.search(r'\d+\s*(d|w|y)\b', age_text) and not re.search(r'\d+\s*(h|m|min|mins|s|giây|phút|giờ)\b', age_text):
-                                    is_young = False
-                                # Kiểm tra định dạng ngày tháng tuyệt đối của FB Tiếng Anh (vd: "September 18")
-                                elif re.search(r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* \d{1,2}', age_text):
-                                    is_young = False
-                            elif aria_label:
-                                # Nếu không có text nhưng có aria-label, kiểm tra năm cũ
-                                if "2023" in aria_label or "2024" in aria_label or "2025" in aria_label:
-                                    is_young = False
-                            
-                            if not is_young:
-                                print(f"[{uid}] 🛑 Bài viết cũ (>24h). Chuyển group khác.")
-                                return False
-
-                            is_first_post_evaluated = False
-                            driver.execute_script("arguments[0].setAttribute('data-scanned', 'true')", cand)
-                            
-                            # Click new tab
-                            ActionChains(driver).key_down(Keys.CONTROL).click(cand).key_up(Keys.CONTROL).perform()
-                            time.sleep(4)
-                            
-                            curr = driver.current_window_handle
-                            if len(driver.window_handles) > 1:
-                                new_w = [w for w in driver.window_handles if w != curr][-1]
-                                driver.switch_to.window(new_w)
-                                time.sleep(2)
-                                real_url = driver.current_url.split("?")[0]
-                                driver.close()
-                                driver.switch_to.window(curr)
-
-                                # Check ID
-                                m = re.search(r"(?:\/posts\/|\/permalink\/|story_fbid=)(\d+)", real_url)
-                                if m:
-                                    pid = m.group(1)
-                                    if pid not in commented_ids:
-                                        consecutive_skip_count = 0
-                                        collected_links.add(real_url)
-                                        break
-                                    else:
-                                        print(f"[{uid}] ⏭️ Bỏ qua {pid} vì đã comment trước đó.")
-                                        consecutive_skip_count += 1
-                                        if consecutive_skip_count >= 10:
-                                            print(f"[{uid}] 🛑 Đã bỏ qua liên tiếp {consecutive_skip_count} bài viết. Dừng account này.")
-                                            return "STOP_ACCOUNT"
-                    except Exception:
-                        pass
-                
-                if collected_links: break
-            
-            if collected_links:
-                break
-
-
-        if not collected_links:
-            print(f"[{uid}] ⚠️ Không tìm thấy bài viết nào phù hợp (<24h) trong nhóm này.")
-            return False
 
         # Xác định file nội dung đích (Special Group logic)
         target_content_file = "resources/edit_stt.txt"
