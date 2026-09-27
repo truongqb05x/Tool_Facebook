@@ -48,14 +48,36 @@ import os
 from utils.locks import FILE_LOCK
 from core.globals import *
 
-def get_profile_path(uid):
+import json
+
+def get_global_profile_dir_from_settings():
+    curr = os.getcwd()
+    for _ in range(4):
+        candidate = os.path.join(curr, "settings.json")
+        if os.path.exists(candidate):
+            try:
+                with open(candidate, "r", encoding="utf-8") as f:
+                    settings = json.load(f)
+                    p = settings.get("ProfilePath", "")
+                    if p: return p
+            except:
+                pass
+        curr = os.path.dirname(curr)
+    return None
+
+def get_profile_path(uid, custom_profile_dir=None):
     """Tính toán đường dẫn tuyệt đối của thư mục profile cho một UID"""
-    profile_dir = getattr(config, "PROFILE_DIR", "profiles")
+    if not custom_profile_dir:
+        custom_profile_dir = get_global_profile_dir_from_settings()
+        
+    profile_dir = custom_profile_dir if custom_profile_dir else getattr(config, "PROFILE_DIR", "profiles")
+    if not profile_dir:
+        profile_dir = "profiles"
     if not os.path.isabs(profile_dir):
         profile_dir = os.path.join(os.getcwd(), profile_dir)
     return os.path.join(profile_dir, uid)
 
-def remove_dead_account(cookie_line):
+def remove_dead_account(cookie_line, custom_profile_dir=None):
     """Xóa tài khoản die khỏi file account.txt, xóa proxy mapping và profile"""
     uid = cookie_line.split("|")[0] if "|" in cookie_line else "Unknown"
     
@@ -86,7 +108,7 @@ def remove_dead_account(cookie_line):
             print(f"Đã giải phóng proxy mapping cho UID {uid}")
             
         # 3. Xóa thư mục profile
-        profile_path = get_profile_path(uid)
+        profile_path = get_profile_path(uid, custom_profile_dir)
         if os.path.exists(profile_path):
             try:
                 shutil.rmtree(profile_path, ignore_errors=True)

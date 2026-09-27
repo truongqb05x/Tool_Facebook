@@ -350,6 +350,7 @@ namespace FPlusClone.ViewModels
                 ProxyMethod = appSettings.ProxyMethod,
                 ProxyList = proxyLines,
                 KiotProxyKey = appSettings.KiotProxyKey ?? "",
+                ProfilePath = appSettings.ProfilePath ?? "",
 
                 // Reset DCOM (chỉ áp dụng khi KiotProxy)
                 IsResetDcom = IsResetDcom,

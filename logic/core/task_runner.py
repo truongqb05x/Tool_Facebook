@@ -278,8 +278,10 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
         _proxy_display = ":".join((proxy_str or "Direct").split(":")[:2])
         print(f"[{uid}] {_proxy_display}")
         
+        custom_profile_dir = task_config.get("ProfilePath") if task_config else None
+
         for login_attempt in range(2):
-            profile_path = get_profile_path(uid)
+            profile_path = get_profile_path(uid, custom_profile_dir)
             # print(f"[{uid}]  Profile Path: {profile_path}")
             if os.path.exists(profile_path):
                 if execution_mode == 2:
@@ -514,4 +516,5 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
             except: pass
             
         if is_dead:
-            remove_dead_account(cookie_line)
+            custom_profile_dir = task_config.get("ProfilePath") if task_config else None
+            remove_dead_account(cookie_line, custom_profile_dir)

@@ -60,7 +60,7 @@ def join_single_group(driver, wait, uid, group_id):
 
     try:
         group_url = f"https://www.facebook.com/{group_id}"
-        print(f"[{uid}] 🌐 Đang chuyển hướng đến nhóm: {group_url}")
+        #print(f"[{uid}] 🌐 Đang chuyển hướng đến nhóm: {group_url}")
         driver.get(group_url)
 
         # Chờ trình duyệt tải xong mã HTML cơ bản
@@ -72,10 +72,10 @@ def join_single_group(driver, wait, uid, group_id):
 
         # Kiểm tra trước xem đã join hoặc gửi yêu cầu chưa
         if _is_already_joined(driver):
-            print(f"[{uid}] ℹ️ Đã tham gia hoặc đã gửi yêu cầu nhóm {group_id} từ trước.")
+            #print(f"[{uid}] ℹ️ Đã tham gia hoặc đã gửi yêu cầu nhóm {group_id} từ trước.")
             return True
 
-        print(f"[{uid}] 🔍 Đang tìm nút 'Tham gia nhóm' cho group {group_id}...")
+        #print(f"[{uid}] 🔍 Đang tìm nút 'Tham gia nhóm' cho group {group_id}...")
 
         click_success = False
 
@@ -122,14 +122,14 @@ def join_single_group(driver, wait, uid, group_id):
                 # JS click (bypass overlay div vô hình)
                 try:
                     driver.execute_script("arguments[0].click();", join_btn)
-                    print(f"[{uid}] ✅ Đã nhấn nút 'Tham gia nhóm' bằng JavaScript (Lần thử {attempt+1})!")
+                    #print(f"[{uid}] ✅ Đã nhấn nút 'Tham gia nhóm' bằng JavaScript (Lần thử {attempt+1})!")
                     click_success = True
                     break
                 except Exception as js_e:
-                    print(f"[{uid}] ⚠️ Click JS thất bại ({js_e}), thử ActionChains...")
+                    #print(f"[{uid}] ⚠️ Click JS thất bại ({js_e}), thử ActionChains...")
                     from selenium.webdriver.common.action_chains import ActionChains
                     ActionChains(driver).move_to_element(join_btn).pause(0.5).click().perform()
-                    print(f"[{uid}] ✅ Đã nhấn nút 'Tham gia nhóm' bằng ActionChains (Lần thử {attempt+1})!")
+                    #print(f"[{uid}] ✅ Đã nhấn nút 'Tham gia nhóm' bằng ActionChains (Lần thử {attempt+1})!")
                     click_success = True
                     break
 
@@ -138,15 +138,15 @@ def join_single_group(driver, wait, uid, group_id):
 
                 # Kiểm tra lại xem đã join chưa (có thể trang tải muộn)
                 if _is_already_joined(driver):
-                    print(f"[{uid}] ℹ️ Đã tham gia hoặc đã gửi yêu cầu nhóm {group_id} (phát hiện sau timeout).")
+                    #print(f"[{uid}] ℹ️ Đã tham gia hoặc đã gửi yêu cầu nhóm {group_id} (phát hiện sau timeout).")
                     return True
 
                 if "stale element reference" in err_str or "not interactable" in err_str:
-                    print(f"[{uid}] 🔄 DOM thay đổi, đang thử lại ({attempt + 1}/3)...")
+                    #print(f"[{uid}] 🔄 DOM thay đổi, đang thử lại ({attempt + 1}/3)...")
                     time.sleep(3)
                 elif "timeout" in err_str and attempt < 2:
                     # Timeout — có thể do nhiều luồng cùng load: thử refresh + đợi thêm
-                    print(f"[{uid}] ⏱️ Timeout chờ nút, thử refresh trang (Lần {attempt + 1}/3)...")
+                    #print(f"[{uid}] ⏱️ Timeout chờ nút, thử refresh trang (Lần {attempt + 1}/3)...")
                     driver.refresh()
                     local_wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
                     time.sleep(random.uniform(3.0, 6.0))
@@ -160,7 +160,7 @@ def join_single_group(driver, wait, uid, group_id):
 
         # Xử lý popup câu hỏi (nếu có)
         try:
-            print(f"[{uid}] ⏳ Đang kiểm tra xem có yêu cầu trả lời câu hỏi/đồng ý nội quy không...")
+            #print(f"[{uid}] ⏳ Đang kiểm tra xem có yêu cầu trả lời câu hỏi/đồng ý nội quy không...")
             dialog_xpath = "//div[@role='dialog' and (contains(@aria-label, 'câu hỏi') or contains(@aria-label, 'quy tắc') or contains(@aria-label, 'Trả lời') or contains(@aria-label, 'Quy tắc'))]"
 
             # Đợi modal xuất hiện (tối đa 30s)
@@ -168,7 +168,7 @@ def join_single_group(driver, wait, uid, group_id):
                 EC.presence_of_element_located((By.XPATH, dialog_xpath))
             )
 
-            print(f"[{uid}] 📝 Phát hiện popup yêu cầu nhập thông tin! Đang chờ nội dung form tải...")
+            #print(f"[{uid}] 📝 Phát hiện popup yêu cầu nhập thông tin! Đang chờ nội dung form tải...")
             time.sleep(5)
 
             # Thử điền form tối đa 3 lần để chống lỗi StaleElement (DOM bị ReactJS re-render)
@@ -233,12 +233,12 @@ def join_single_group(driver, wait, uid, group_id):
                         from selenium.webdriver.common.action_chains import ActionChains
                         ActionChains(driver).move_to_element(submit_btn).click().perform()
 
-                    print(f"[{uid}] ✅ Đã tự động xử lý form và nhấn nút hoàn tất cho {group_id}!")
+                    #print(f"[{uid}] ✅ Đã tự động xử lý form và nhấn nút hoàn tất cho {group_id}!")
                     break
 
                 except Exception as inner_e:
                     if "stale element reference" in str(inner_e).lower() and retry < 2:
-                        print(f"[{uid}] 🔄 Giao diện bị tải lại, đang thử quét lại form ({retry+1}/3)...")
+                        #print(f"[{uid}] 🔄 Giao diện bị tải lại, đang thử quét lại form ({retry+1}/3)...")
                         time.sleep(2)
                     elif "no such element" in str(inner_e).lower():
                         if retry == 2:
@@ -251,7 +251,7 @@ def join_single_group(driver, wait, uid, group_id):
         except Exception as e:
             from selenium.common.exceptions import TimeoutException
             if isinstance(e, TimeoutException):
-                print(f"[{uid}] ℹ️ Nhóm {group_id} không yêu cầu trả lời câu hỏi hoặc tự duyệt.")
+                print(f"[{uid}] Tham gia {group_id} thành công.")
             else:
                 print(f"[{uid}] ⚠️ Lỗi khi xử lý popup form của nhóm {group_id}: {e}")
 
