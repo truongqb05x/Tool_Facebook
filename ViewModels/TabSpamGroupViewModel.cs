@@ -508,6 +508,7 @@ namespace FPlusClone.ViewModels
                         if (_runningProcess != null && _runningProcess.HasExited && _runningProcess.ExitCode == 0)
                         {
                             StatusText = "Đã kết thúc";
+                            System.Windows.MessageBox.Show("Tiến trình Spam Group đã hoàn thành toàn bộ công việc!", "Hoàn thành", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                         }
                         else
                         {
