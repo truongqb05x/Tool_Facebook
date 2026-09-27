@@ -516,24 +516,8 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                 found_and_commented = True
                 print(f"[{uid}]  Đã hoàn thành {success_count}/{max_comments} comment.")
                 print(f" Comment thành công: {uid} | Group: {target_gid}")
-                #print(f"[{uid}] UI_PROGRESS_SUCCESS")
+                print(f"[{uid}] UI_PROGRESS_SUCCESS")
                 
-                # ACTION SAU KHI POST
-                if execution_mode == 1 and task_config and task_config.get("ActionAfterPost"):
-                    cfg = task_config.get("ConfigAfterPost", {})
-                    if cfg.get("IsScrollFeed"):
-                        print(f"[{uid}]  Thực hiện hành động Lướt Newfeed")
-                        feed_time = cfg.get("ScrollTimeMax", 60)
-                        warm_up_account(driver, uid, warmup_time=feed_time, cfg=cfg)
-                    if cfg.get("IsReadNotifications"):
-                        print(f"[{uid}]  Thực hiện hành động Đọc thông báo")
-                        count = cfg.get("ReadNotificationsCount", 1)
-                        for _ in range(count):
-                            read_one_random_notification(driver, uid)
-                    if cfg.get("IsChatWithEachOther"):
-                        print(f"[{uid}]  Thực hiện hành động Nhắn tin 2 chiều")
-                        run_two_way_chat(driver=driver, uid=uid, task_config=task_config)
-                        
                 break
             else:
                 retry_group_count += 1
@@ -556,4 +540,21 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             print(f"[{uid}]  Nghỉ 10s...")
             time.sleep(10)
             
+    # ACTION SAU KHI HOÀN THÀNH TẤT CẢ POST (HOẶC HẾT GROUP)
+    if execution_mode == 1 and task_config and task_config.get("ActionAfterPost"):
+        print(f"[{uid}]  Bắt đầu chạy Hành động sau bình luận (Action After Post)...")
+        cfg = task_config.get("ConfigAfterPost", {})
+        if cfg.get("IsScrollFeed"):
+            print(f"[{uid}]  Thực hiện hành động Lướt Newfeed")
+            feed_time = cfg.get("ScrollTimeMax", 60)
+            warm_up_account(driver, uid, warmup_time=feed_time, cfg=cfg)
+        if cfg.get("IsReadNotifications"):
+            print(f"[{uid}]  Thực hiện hành động Đọc thông báo")
+            count = cfg.get("ReadNotificationsCount", 1)
+            for _ in range(count):
+                read_one_random_notification(driver, uid)
+        if cfg.get("IsChatWithEachOther"):
+            print(f"[{uid}]  Thực hiện hành động Nhắn tin 2 chiều")
+            run_two_way_chat(driver=driver, uid=uid, task_config=task_config)
+
     return True, is_dead, driver

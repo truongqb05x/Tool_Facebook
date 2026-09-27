@@ -80,7 +80,26 @@ namespace FPlusClone.ViewModels
         public bool IsImageCommentWithText
         {
             get => _isImageCommentWithText;
-            set { if (_isImageCommentWithText != value) { _isImageCommentWithText = value; OnPropertyChanged(); } }
+            set { 
+                if (_isImageCommentWithText != value) { 
+                    _isImageCommentWithText = value; 
+                    if (value) IsImageCommentAutoGenerate = false;
+                    OnPropertyChanged(); 
+                } 
+            }
+        }
+
+        private bool _isImageCommentAutoGenerate;
+        public bool IsImageCommentAutoGenerate
+        {
+            get => _isImageCommentAutoGenerate;
+            set { 
+                if (_isImageCommentAutoGenerate != value) { 
+                    _isImageCommentAutoGenerate = value; 
+                    if (value) IsImageCommentWithText = false;
+                    OnPropertyChanged(); 
+                } 
+            }
         }
 
         public System.Collections.ObjectModel.ObservableCollection<CommentModel> CommentsList { get; set; } = new System.Collections.ObjectModel.ObservableCollection<CommentModel>();
@@ -331,6 +350,7 @@ namespace FPlusClone.ViewModels
                 IsTextComment = IsTextComment,
                 IsImageComment = IsImageComment,
                 IsImageCommentWithText = IsImageCommentWithText,
+                IsImageCommentAutoGenerate = IsImageCommentAutoGenerate,
                 ImageFolderPath = ImageFolderPath,
                 IsSequentialComment = IsSequentialComment,
                 IsRandomComment = IsRandomComment,
