@@ -351,6 +351,7 @@ namespace FPlusClone.ViewModels
                 IsImageComment = IsImageComment,
                 IsImageCommentWithText = IsImageCommentWithText,
                 IsImageCommentAutoGenerate = IsImageCommentAutoGenerate,
+                EditAfterPost = EditAfterPost,
                 ImageFolderPath = ImageFolderPath,
                 IsSequentialComment = IsSequentialComment,
                 IsRandomComment = IsRandomComment,

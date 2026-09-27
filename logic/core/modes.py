@@ -101,6 +101,8 @@ def run_cli():
                 max_threads = int(task_config.get("MaxThreads", max_threads))
             if "MaxCommentsPerAcc" in task_config:
                 max_limit = int(task_config.get("MaxCommentsPerAcc", max_limit))
+            if "EditAfterPost" in task_config:
+                is_edit_comment = "yes" if task_config.get("EditAfterPost") else "no"
 
         MAX_THREADS = max_threads 
 
