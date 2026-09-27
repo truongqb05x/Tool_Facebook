@@ -14,7 +14,7 @@ from actions.join_groups import join_single_group
 from actions.out_group import out_groups_by_mode
 from actions.utils.read_notifications import read_one_random_notification
 from actions.utils.chat_two_ways import run_two_way_chat
-from actions.login import login_with_credentials
+from actions.utils.login import login_with_credentials
 from utils.scan_group import get_joined_groups
 
 def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_edit_comment, warmup_time_sec, keyword_list, group_join_list, out_group_mode, out_group_list, page_list, page_comment_mode, delete_page_after_comment, ttc_jobs, ttc_comment_mode, cycle_count, task_config, parts, win_pos, proxy_config, user_agent):
@@ -34,12 +34,12 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         return True
 
     if execution_mode == 3:
-        print(f"[{uid}] MODE 3: Tiến hành nuôi tài khoản trong {warmup_time_sec} giây...")
+        #print(f"[{uid}] MODE 3: Tiến hành nuôi tài khoản trong {warmup_time_sec} giây...")
         warm_up_account(driver, uid, warmup_time=warmup_time_sec, cfg=task_config)
         
         # Gọi logic đăng bài nếu UI có check IsPost
         if task_config and task_config.get("IsPost", False):
-            print(f"[{uid}] MODE 3: Bắt đầu chạy chức năng đăng bài tự động...")
+            #print(f"[{uid}] MODE 3: Bắt đầu chạy chức năng đăng bài tự động...")
             try:
                 from actions.utils.dang_bai import post_manual_content, get_random_post
                 import json
@@ -75,7 +75,8 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                     post_manual_content(driver, uid, post_content=content, image_path=img_path, is_feeling=is_feeling, is_checkin=is_checkin, is_tag=is_tag)
                 elif mode == 2:
                     print(f"[{uid}] Lấy bài viết ngẫu nhiên từ API Graph...")
-                    target_uid = "100072095290428"
+                    target_uids = ["100044408347036", "100044255598168", "100012078365894"]
+                    target_uid = random.choice(target_uids)
                     access_token = "EAAAAUaZA8jlABQ7IWv8yBHIu1AnOHE8Wt4XqrACtZAKm0EERw8rcXoVIs2VQ2obfE98kpawmClywgMJzjEyJIYslODXFvAmr5v0ELBKs8Q6vMMX8dVgxpARgOPhPKzHkkKZAeGYpE2y8gNyStB1vWbwh2chje8H3CnNIAk8IXszu4LOEPZA4lMZAFvU1TEZBbz2PcX00EZCzwZDZD"
                     post_data = get_random_post(target_uid, access_token)
                     if post_data:
@@ -87,8 +88,8 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             except Exception as e:
                 print(f"[{uid}] Lỗi chạy chức năng đăng bài: {e}")
                 
-        print(f"[{uid}]  MODE 3: Nuôi tài khoản hoàn tất.")
-        print(f"[{uid}] UI_PROGRESS_SUCCESS")
+        print(f"[{uid}] Nuôi tài khoản hoàn tất.")
+        #print(f"[{uid}] UI_PROGRESS_SUCCESS")
         return True
 
     if execution_mode == 4:

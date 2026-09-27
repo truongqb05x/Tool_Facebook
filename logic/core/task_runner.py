@@ -35,7 +35,7 @@ from utils.account_registry import (
 from utils.kiot_proxy import get_new_kiot_proxy, parse_kiot_proxy_string
 from core.automation_service import process_group_cycle, process_keyword_search, process_page_cycle, process_ttc_cycle
 from actions.feed_actions import warm_up_account
-from actions.login import login_with_credentials
+from actions.utils.login import login_with_credentials
 from actions.join_groups import join_single_group
 from actions.out_group import out_groups_by_mode
 from actions.TTC.get_job import fetch_ttc_jobs
@@ -393,6 +393,13 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                 driver.get("https://www.facebook.com/me")
                 time.sleep(5)
                 login_verified = verify_uid(driver, uid)
+                
+            if login_verified:
+                try:
+                    from actions.utils.change_language_vie import check_and_change_language_to_vi
+                    check_and_change_language_to_vi(driver, uid)
+                except Exception as e_lang:
+                    print(f"[{uid}] Lỗi khi check/đổi ngôn ngữ (profile đã login): {e_lang}")
     
             if not login_verified:
                 password = parts[1] if len(parts) > 1 else ""

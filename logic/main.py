@@ -35,7 +35,7 @@ from utils.account_registry import (
 from utils.kiot_proxy import get_new_kiot_proxy, parse_kiot_proxy_string
 from core.automation_service import process_group_cycle, process_keyword_search, process_page_cycle, process_ttc_cycle
 from actions.feed_actions import warm_up_account
-from actions.login import login_with_credentials
+from actions.utils.login import login_with_credentials
 from actions.join_groups import join_single_group
 from actions.out_group import out_groups_by_mode
 from actions.TTC.get_job import fetch_ttc_jobs

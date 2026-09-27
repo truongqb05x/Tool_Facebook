@@ -152,7 +152,7 @@ def run_account_flow(cookie_line, target_uid, flow_type, window_index, sync_even
         if not login_verified:
             print(f"[Thread-{flow_type}] Cookie lỗi, thử MK...")
             if password:
-                from actions.login import login_with_credentials
+                from actions.utils.login import login_with_credentials
                 login_with_credentials(driver, uid, password)
                 time.sleep(5)
                 login_verified = verify_uid(driver, uid)
