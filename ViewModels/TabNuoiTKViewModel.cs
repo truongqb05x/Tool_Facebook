@@ -228,7 +228,7 @@ namespace FPlusClone.ViewModels
             
             foreach (var acc in TaskAccounts)
             {
-                acc.Progress = "0/1";
+                acc.Progress = "Đang chạy...";
             }
 
             IsRunning = true;
@@ -282,6 +282,8 @@ namespace FPlusClone.ViewModels
                                 if (acc != null)
                                 {
                                     acc.Status = "Die";
+                                    var mainVm = System.Windows.Application.Current.MainWindow?.DataContext as MainViewModel;
+                                    mainVm?.UpdateAccountStatus(uidStr, "Die");
                                 }
                             }
 
@@ -293,11 +295,7 @@ namespace FPlusClone.ViewModels
                                 var acc = TaskAccounts.FirstOrDefault(a => a.Account.Uid == uidStr);
                                 if (acc != null)
                                 {
-                                    var parts = acc.Progress.Split('/');
-                                    if (parts.Length > 0 && int.TryParse(parts[0], out int currentSuccess))
-                                    {
-                                        acc.Progress = $"{currentSuccess + 1}/1";
-                                    }
+                                    acc.Progress = "Nuôi tài khoản hoàn tất";
                                 }
                             }
                             
@@ -346,6 +344,7 @@ namespace FPlusClone.ViewModels
                         if (_runningProcess != null && _runningProcess.HasExited && _runningProcess.ExitCode == 0)
                         {
                             StatusText = "Đã kết thúc";
+                            System.Windows.MessageBox.Show("Hoàn thành công việc!", "Hoàn thành", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                         }
                         else
                         {

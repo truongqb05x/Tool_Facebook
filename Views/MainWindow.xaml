@@ -494,7 +494,7 @@
                             <DataGridTextColumn Header="2FA" Binding="{Binding TwoFA}" Width="60"/>
                             <DataGridTextColumn Header="Proxy" Binding="{Binding Proxy}" Width="100"/>
                             <DataGridTextColumn Header="UserAgent" Binding="{Binding UserAgent}" Width="120"/>
-                            <DataGridTextColumn Header="Log" Binding="{Binding Status}" Width="100">
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>

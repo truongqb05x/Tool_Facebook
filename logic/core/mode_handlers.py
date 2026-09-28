@@ -7,7 +7,7 @@ from config import config
 from utils.locks import FILE_LOCK
 from utils.file_utils import read_file
 from core.globals import *
-from core.helpers import get_profile_path, remove_dead_account
+from utils.helpers import get_profile_path
 from actions.feed_actions import warm_up_account
 from core.automation_service import process_keyword_search, process_page_cycle, process_ttc_cycle, process_group_cycle
 from actions.join_groups import join_single_group
@@ -168,7 +168,9 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                                     print(f"[{uid}]  Vẫn còn CHECKPOINT. Bỏ qua tài khoản.")
                                     return "SKIPPED_SOFT_CHECKPOINT"
                             else:
-                                print(f"[{uid}]  PHÁT HIỆN CHECKPOINT CỨNG -> Xóa tài khoản.")
+                                print(f"[{uid}]  PHÁT HIỆN CHECKPOINT CỨNG -> Dừng tài khoản.")
+                                print(f"[{uid}] UI_STATUS|Die")
+                                print(f"[{uid}] UI_REMOVE|{uid}")
                                 is_dead = True
                                 return False
                                 
@@ -212,7 +214,9 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                             print(f"[{uid}]  Vẫn còn CHECKPOINT. Bỏ qua tài khoản.")
                             return "SKIPPED_SOFT_CHECKPOINT"
                     else:
-                        print(f"[{uid}]  PHÁT HIỆN CHECKPOINT CỨNG -> Xóa tài khoản.")
+                        print(f"[{uid}]  PHÁT HIỆN CHECKPOINT CỨNG -> Dừng tài khoản.")
+                        print(f"[{uid}] UI_STATUS|Die")
+                        print(f"[{uid}] UI_REMOVE|{uid}")
                         is_dead = True
                         return False
                         
@@ -458,9 +462,24 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                 
             SCANNED_GROUPS_CACHE[uid] = list(g_list)
 
-    # SHUFFLE GROUP ĐỂ RANDOM KHÔNG TRÙNG (1 turn không trùng group)
-    random.shuffle(g_list)
-    group_iterator = iter(g_list)
+    # KHÔNG SHUFFLE NỮA MÀ LẤY LẦN LƯỢT THEO DANH SÁCH (ACCOUNT 1 -> GROUP 1, ACCOUNT 2 -> GROUP 2...)
+    acc_index = 0
+    if task_config:
+        selected_accounts = task_config.get("SelectedAccounts", [])
+        try:
+            acc_index = selected_accounts.index(uid)
+        except ValueError:
+            pass
+
+    if g_list:
+        start_group_idx = (acc_index * max_comments) % len(g_list)
+        sequential_g_list = []
+        for i in range(len(g_list)):
+            idx = (start_group_idx + i) % len(g_list)
+            sequential_g_list.append(g_list[idx])
+        group_iterator = iter(sequential_g_list)
+    else:
+        group_iterator = iter([])
 
     # Loop với giới hạn số lần comment
     success_count = 0
@@ -506,7 +525,7 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             if result == "BLOCK_EDIT_DETECTED":
                 print(f"[{uid}]  Phát hiện comment bị từ chối/chờ duyệt. Xóa khỏi danh sách tài khoản được chọn trong UI chạy...")
                 print(f"[{uid}] UI_REMOVE|{uid}")  # Tín hiệu để C# xóa account khỏi list chờ trong UI
-                # Không gọi remove_dead_account(cookie_line) để không xóa trong file
+
                 BLOCKED_ACCOUNTS.add(uid)
                 found_and_commented = False
                 break # Thoát khỏi retry_group_count loop

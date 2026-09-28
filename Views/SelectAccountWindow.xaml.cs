@@ -74,7 +74,9 @@ namespace FPlusClone.Views
 
             SelectAllCommand = new ViewModels.RelayCommand(_ =>
             {
-                SelectedAccountsResult = new ObservableCollection<FacebookAccount>(ItemsView.Cast<FacebookAccount>());
+                var random = new System.Random();
+                var randomizedList = ItemsView.Cast<FacebookAccount>().OrderBy(x => random.Next()).ToList();
+                SelectedAccountsResult = new ObservableCollection<FacebookAccount>(randomizedList);
                 DialogResult = true;
                 Close();
             });

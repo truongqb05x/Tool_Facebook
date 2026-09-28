@@ -258,7 +258,6 @@ def run_cli():
                                 result = subprocess.run(["net", "stop", "RasMan"], capture_output=True, text=True, timeout=15)
                                 time.sleep(2)
                                 result = subprocess.run(["net", "start", "RasMan"], capture_output=True, text=True, timeout=15)
-                                print(f" Reset DCOM hoàn tất. Đợi 10s cho kết nối ổn định...")
                                 time.sleep(10)
                                 # Xóa cache KiotProxy để buộc lấy IP mới
                                 with KIOT_PROXY_LOCK:
@@ -650,6 +649,16 @@ def run_cli():
                         for idx, cookie in enumerate(batch):
                             slot_index = idx % max_threads
                             futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=1, warmup_time_sec=None, cycle_count=proxy_turn, task_config=task_config))
+                            
+                            # Thời gian nghỉ giãn cách khởi động giữa các tài khoản
+                            if task_config:
+                                delay_min = task_config.get("DelayAccountMin", 0)
+                                delay_max = task_config.get("DelayAccountMax", 0)
+                                if delay_max > 0 and idx < len(batch) - 1:
+                                    delay_s = random.randint(delay_min, delay_max)
+                                    # print(f" Đang chờ {delay_s}s trước khi mở tab tài khoản tiếp theo...")
+                                    time.sleep(delay_s)
+                                    
                         for f in futures:
                             f.result()
                     
@@ -665,7 +674,6 @@ def run_cli():
                                 result = subprocess.run(["net", "stop", "RasMan"], capture_output=True, text=True, timeout=15)
                                 time.sleep(2)
                                 result = subprocess.run(["net", "start", "RasMan"], capture_output=True, text=True, timeout=15)
-                                print(f" Reset DCOM hoàn tất. Đợi 10s cho kết nối ổn định...")
                                 time.sleep(10)
                                 # Xóa cache KiotProxy để buộc lấy IP mới
                                 with KIOT_PROXY_LOCK:
@@ -673,6 +681,15 @@ def run_cli():
                                 accounts_processed = 0  # reset bộ đếm
                             except Exception as e:
                                 print(f" Lỗi khi Reset DCOM: {e}")
+                    
+                    # NGHỈ CHUYỂN TÀI KHOẢN (Giữa các đợt/tài khoản)
+                    if task_config and (i + max_threads) < len(current_cookies):
+                        delay_min = task_config.get("DelayAccountMin", 0)
+                        delay_max = task_config.get("DelayAccountMax", 0)
+                        if delay_max > 0:
+                            delay_s = random.randint(delay_min, delay_max)
+                            print(f" Đang chờ {delay_s}s trước khi chuyển sang đợt/tài khoản tiếp theo...")
+                            time.sleep(delay_s)
                 
                 print(f" Đã chạy hết vòng {cycle_count}. Nghỉ 60s trước khi vòng mới...")
                 time.sleep(60) 

@@ -98,9 +98,9 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc">
-                                    <TextBox Text="{Binding NewComment, UpdateSourceTrigger=PropertyChanged}" Padding="5" BorderThickness="0" Background="Transparent" Height="60" AcceptsReturn="True" TextWrapping="Wrap"/>
+                                    <TextBox Text="{Binding NewComment, UpdateSourceTrigger=PropertyChanged}" Padding="5" BorderThickness="0" Background="Transparent" Height="30" AcceptsReturn="True" TextWrapping="Wrap"/>
                                 </Border>
-                                <Button Grid.Column="1" Content="Thêm" Command="{Binding AddCommentCommand}" Background="#1a73e8" Foreground="White" BorderThickness="0" Padding="10,0" Margin="5,0,0,0" Cursor="Hand" Height="60"/>
+                                <Button Grid.Column="1" Content="Thêm" Command="{Binding AddCommentCommand}" Background="#1a73e8" Foreground="White" BorderThickness="0" Padding="10,0" Margin="5,0,0,0" Cursor="Hand" Height="30"/>
                             </Grid>
                             
                             <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc" Height="150">
@@ -168,7 +168,7 @@
                             </Grid.ColumnDefinitions>
                             
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="Danh sách Group ID / Link" FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,6"/>
+                                <TextBlock Text="Danh sách Group ID " FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,6"/>
                                 <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc">
                                     <TextBox Text="{Binding GroupUids}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" Padding="8" BorderThickness="0" FontFamily="Consolas" Background="Transparent"/>
                                 </Border>
@@ -376,7 +376,26 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Nghỉ giữa comment (giây)" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Delay chuyển đổi tài khoản " FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
+                                        <TextBox Text="{Binding DelayAccountMin}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="-" VerticalAlignment="Center" Margin="5,0"/>
+                                    <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
+                                        <TextBox Text="{Binding DelayAccountMax}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Nghỉ giữa comment" FontSize="12" FontWeight="SemiBold"/>
                                     <TextBlock Text="Khoảng thời gian random" FontSize="11" Foreground="#888"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal">

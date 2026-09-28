@@ -173,7 +173,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
             
         if not group_clicked:
             # Nếu không tìm thấy trong danh sách đã tham gia, thử kiểm tra và tham gia nhóm
-            print(f"[{uid}] Không tìm thấy trong danh sách nhóm đã tham gia. Tiến hành kiểm tra và tham gia...")
+            #print(f"[{uid}] Không tìm thấy trong danh sách nhóm đã tham gia. Tiến hành kiểm tra và tham gia...")
             join_single_group(driver, None, uid, g_id)
             time.sleep(2)
             
@@ -184,6 +184,38 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 a.click();
             """
             driver.execute_script(script_target)
+            time.sleep(5)
+            
+            # Kiểm tra xem có phải nhóm riêng tư sau khi join (chờ duyệt hoặc không có quyền xem feed)
+            is_private = False
+            try:
+                private_xpaths = [
+                    "//*[contains(text(), 'Nhóm Riêng tư')]",
+                    "//*[contains(text(), 'Nhóm riêng tư')]",
+                    "//*[contains(text(), 'Private group')]",
+                    "//*[contains(text(), 'Private Group')]",
+                    "//*[contains(text(), 'Hủy yêu cầu')]",
+                    "//*[contains(text(), 'Đã yêu cầu')]",
+                    "//*[contains(text(), 'Yêu cầu đang chờ')]",
+                    "//*[contains(text(), 'Đã gửi yêu cầu')]",
+                    "//*[contains(text(), 'Pending')]",
+                    "//*[contains(text(), 'Cancel request')]",
+                    "//*[contains(text(), 'Request sent')]"
+                ]
+                for xpath in private_xpaths:
+                    elements = driver.find_elements(By.XPATH, xpath)
+                    for el in elements:
+                        if el.is_displayed():
+                            is_private = True
+                            break
+                    if is_private:
+                        break
+            except Exception:
+                pass
+                
+            if is_private:
+                print(f"[{uid}] 🔒 Nhóm {g_id} là nhóm riêng tư hoặc đang chờ duyệt. Bỏ qua comment.")
+                return False
         else:
             time.sleep(4)
             if "sorting_setting=CHRONOLOGICAL" not in driver.current_url:
@@ -227,31 +259,12 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
         
 
         collected_links = set()
-        history_file = "resources/commented.txt"
-        
-        # Load history với Lock
-        with FILE_LOCK:
-            commented_ids = set()
-            if os.path.exists(history_file):
-                with open(history_file, "r", encoding="utf-8") as f:
-                    commented_ids = set(l.strip() for l in f if l.strip())
 
         # 2. Scan & Scroll loop
         is_first_post_evaluated = True
         
         # --- START DIRECT MODE ---
         if True:
-            
-            target_content_file = "resources/edit_stt.txt"
-            special_groups_file = "resources/special_groups.txt"
-            if os.path.exists(special_groups_file):
-                with open(special_groups_file, "r", encoding="utf-8-sig") as f:
-                    special_groups = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-                is_special = any(item in group_id or item in target_url for item in special_groups)
-                if is_special:
-                    target_content_file = "resources/special_stt.txt"
-                    print(f"[{uid}] 🌟 PHÁT HIỆN GROUP ĐẶC BIỆT! Sử dụng file: {target_content_file}")
-            
             is_image_comment = False
             is_image_comment_with_text = False
             images_dir = "resources/images"
@@ -268,15 +281,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                         if is_image_comment:
                             print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ƯU TIÊN ẢNH (Text Mode)! Sử dụng chế độ comment bằng ảnh.")
                             images_dir = task_config.get("ImageFolderPath", "resources/images")
-            else:
-                image_groups_file = "resources/image_groups.txt"
-                if os.path.exists(image_groups_file):
-                    with open(image_groups_file, "r", encoding="utf-8-sig") as f:
-                        image_groups = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-                    is_image_comment = any(item in group_id or item in target_url for item in image_groups)
-                    if is_image_comment:
-                        print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ẢNH! Sử dụng chế độ comment bằng ảnh.")
-
             for attempt in range(2):
                 if attempt > 0:
                     driver.refresh()
@@ -366,48 +370,26 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     else:
                                         target_edit_content = "Check inbox nhé"
                                     
-                                    if is_edit_comment == "yes" and not is_image_comment:
+                                    if is_edit_comment == "yes":
                                         with FILE_LOCK:
                                             stt_lines = read_file("resources/stt.txt")
                                         content = random.choice(stt_lines) if stt_lines else "Up bài giúp b nhé"
                                     else:
                                         content = target_edit_content
-                            else:
-                                if is_edit_comment == "no":
-                                    content = "Check inbox nhé"
-                                    if os.path.exists(target_content_file):
-                                        with open(target_content_file, "r", encoding="utf-8-sig") as f:
-                                            lines = [line.strip() for line in f if line.strip()]
-                                            if lines:
-                                                content = random.choice(lines)
-                                else:
-                                    with FILE_LOCK:
-                                        stt_lines = read_file("resources/stt.txt")
-                                    content = random.choice(stt_lines) if stt_lines else "Up bài giúp b nhé"
-                            
                             time.sleep(random.uniform(2, 5))
-                            
                             # --- PERMALINK FALLBACK LOGIC ---
                             current_url = driver.current_url
                             if "/permalink/" in current_url or "/posts/" in current_url or "story_fbid=" in current_url:
-                                m = re.search(r"(?:\/posts\/|\/permalink\/|story_fbid=)(\d+)", current_url)
-                                if m:
-                                    pid = m.group(1)
-                                    if pid in commented_ids:
-                                        print(f"[{uid}] ⏭️ Bỏ qua {pid} vì đã comment trước đó.")
-                                        return False
-                                    else:
-                                        collected_links.add(current_url)
-                                        is_permalink_fallback = True
-                                        break
+                                collected_links.add(current_url)
+                                is_permalink_fallback = True
+                                break
                             # ---------------------------------
-                            
                             if is_image_comment:
                                 # Click và focus vào ô comment để Facebook hiện nút Send (Submit)
                                 driver.execute_script("arguments[0].click(); arguments[0].focus();", comment_input)
                                 time.sleep(2)
                                 
-                                if (is_image_comment_with_text or task_config.get("IsImageCommentAutoGenerate", False)) and content:
+                                if (is_image_comment_with_text or task_config.get("IsImageCommentAutoGenerate", False) or is_edit_comment == "yes") and content:
                                     type_human_like(driver, content, element=comment_input)
                                     time.sleep(2)
                                 
@@ -493,7 +475,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             # ========================================================
                             
                             # ================= START EDIT & RE-COMMENT =================
-                            if is_edit_comment == "yes" and not is_image_comment:
+                            if is_edit_comment == "yes":
                                 try:
                                     #print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Direct)...")
                                     comment_text_xpath = f"//*[contains(text(), '{content}')]"
@@ -520,10 +502,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     new_content = "Check inbox nhé"
                                     if task_config:
                                         new_content = target_edit_content
-                                    else:
-                                        if os.path.exists(target_content_file):
-                                            with open(target_content_file, "r", encoding="utf-8-sig") as f:
-                                                new_content = f.read().strip()
                                     
                                     type_human_like(driver, new_content, element=box)
                                     time.sleep(1)
@@ -552,20 +530,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 return False
         # --- END DIRECT MODE ---
 
-
-        # Xác định file nội dung đích (Special Group logic)
-        target_content_file = "resources/edit_stt.txt"
-        special_groups_file = "resources/special_groups.txt"
-        if os.path.exists(special_groups_file):
-            with open(special_groups_file, "r", encoding="utf-8-sig") as f:
-                special_groups = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-            
-            # Kiểm tra nếu group_id hoặc target_url chứa bất kỳ ID/Username nào trong danh sách
-            is_special = any(item in group_id or item in target_url for item in special_groups)
-            if is_special:
-                target_content_file = "resources/special_stt.txt"
-                print(f"[{uid}] 🌟 PHÁT HIỆN GROUP ĐẶC BIỆT! Sử dụng file: {target_content_file}")
-
         # Xác định chế độ comment ảnh (Image Group logic)
         is_image_comment = False
         is_image_comment_with_text = False
@@ -582,14 +546,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                     if is_image_comment:
                         print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ƯU TIÊN ẢNH! Sử dụng chế độ comment bằng ảnh.")
                         images_dir = task_config.get("ImageFolderPath", "resources/images")
-        else:
-            image_groups_file = "resources/image_groups.txt"
-            if os.path.exists(image_groups_file):
-                with open(image_groups_file, "r", encoding="utf-8-sig") as f:
-                    image_groups = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-                is_image_comment = any(item in group_id or item in target_url for item in image_groups)
-                if is_image_comment:
-                    print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ẢNH! Sử dụng chế độ comment bằng ảnh.")
 
         # Comment logic
         post_url = list(collected_links)[0]
@@ -610,20 +566,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                         content = random.choice(comment_list)
                 else:
                     content = "Check inbox nhé"
-        else:
-            if is_edit_comment == "no":
-                # Nếu không edit, lấy trực tiếp nội dung từ file đích
-                content = "Check inbox nhé" # Fallback
-                if os.path.exists(target_content_file):
-                    with open(target_content_file, "r", encoding="utf-8-sig") as f:
-                        lines = [line.strip() for line in f if line.strip()]
-                        if lines:
-                            content = random.choice(lines)
-            else:
-                # Nếu có edit, lấy ngẫu nhiên từ stt.txt như cũ
-                with FILE_LOCK:
-                    stt_lines = read_file("resources/stt.txt")
-                content = random.choice(stt_lines) if stt_lines else "Up bài giúp b nhé"
+
 
 
         textbox_xpath = '//div[@role="textbox"]'
@@ -651,7 +594,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
 
             if is_image_comment:
                 # === CHẾ ĐỘ COMMENT ẢNH ===
-                if (is_image_comment_with_text or task_config.get("IsImageCommentAutoGenerate", False)) and content:
+                if (is_image_comment_with_text or task_config.get("IsImageCommentAutoGenerate", False) or is_edit_comment == "yes") and content:
                     driver.execute_script("arguments[0].focus();", comment_input)
                     time.sleep(1)
                     type_human_like(driver, content, element=comment_input)
@@ -758,7 +701,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
             # =================================================================
 
             # ================= START EDIT & RE-COMMENT =================
-            if is_edit_comment == "yes" and not is_image_comment:
+            if is_edit_comment == "yes":
                 try:
                     print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Bulk Content)...")
                     # 1. Tìm comment vừa đăng (theo nội dung vừa gõ)
@@ -790,10 +733,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                     new_content = "Check inbox nhé" # Fallback
                     if task_config:
                         new_content = target_edit_content
-                    else:
-                        if os.path.exists(target_content_file):
-                            with open(target_content_file, "r", encoding="utf-8-sig") as f:
-                                new_content = f.read().strip()
                     
                     type_human_like(driver, new_content, element=box)
                     time.sleep(1)
@@ -803,15 +742,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 except Exception as e_edit:
                     print(f"[{uid}] ⚠️ Lỗi quy trình sửa comment: {e_edit}")
             # ===========================================================
-
-            # Save history với Lock
-            pid_match = re.search(r"(?:\/posts\/|\/permalink\/|story_fbid=)(\d+)", post_url)
-            
-            if pid_match:
-                pid = pid_match.group(1)
-                with FILE_LOCK:
-                    with open(history_file, "a", encoding="utf-8") as f: f.write(f"{pid}\n")
-                print(f"[{uid}] 💾 Đã lưu lịch sử {pid} (Dùng chung toàn bộ tool).")
             return True # THÀNH CÔNG
 
     except Exception as e:

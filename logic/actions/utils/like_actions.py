@@ -54,7 +54,7 @@ def random_like_post(driver, uid, allowed_reactions=None):
                 except Exception:
                     driver.execute_script("arguments[0].click();", chosen_reaction)
                 
-                print(f"[{uid}] 👍 Đã thả cảm xúc bài viết: {reaction_name}")
+                print(f"[{uid}]  Đã thả cảm xúc bài viết: {reaction_name}")
                 return True
             else:
                 # Fallback: Nếu không bắt được popup cảm xúc, click mặc định vào nút Like
@@ -63,7 +63,7 @@ def random_like_post(driver, uid, allowed_reactions=None):
                 except Exception:
                     driver.execute_script("arguments[0].click();", target_like)
                     
-                print(f"[{uid}] 👍 Không bắt được popup cảm xúc, đã bấm Like mặc định.")
+                print(f"[{uid}]  Không bắt được popup cảm xúc, đã bấm Like mặc định.")
                 return True
     except Exception as e:
         print(f"[{uid}] ❌ Lỗi khi thả cảm xúc: {e}")

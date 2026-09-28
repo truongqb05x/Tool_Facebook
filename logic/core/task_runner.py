@@ -44,7 +44,7 @@ from actions.utils.chat_two_ways import run_two_way_chat
 
 
 from core.globals import *
-from core.helpers import get_profile_path, remove_dead_account
+from utils.helpers import get_profile_path
 from core.mode_handlers import dispatch_execution_mode
 
 def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="yes", execution_mode=1, warmup_time_sec=None, keyword_list=None, group_join_list=None, out_group_mode=None, out_group_list=None, page_list=None, page_comment_mode="text", delete_page_after_comment=True, ttc_jobs=None, ttc_comment_mode="text", cycle_count=1, task_config=None):
@@ -367,8 +367,9 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                     else:
                         print(f"[{uid}]  Đã vượt CHECKPOINT TẠM THỜI thành công, tiếp tục chạy.")
                 else:
-                    print(f"[{uid}]  PHÁT HIỆN CHECKPOINT CỨNG -> Xóa tài khoản.")
+                    print(f"[{uid}]  PHÁT HIỆN CHECKPOINT CỨNG -> Dừng tài khoản.")
                     print(f"[{uid}] UI_STATUS|Die")
+                    print(f"[{uid}] UI_REMOVE|{uid}")
                     is_dead = True
                     return False
     
@@ -515,6 +516,4 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                 time.sleep(1) # Chờ process giải phóng file
             except: pass
             
-        if is_dead:
-            custom_profile_dir = task_config.get("ProfilePath") if task_config else None
-            remove_dead_account(cookie_line, custom_profile_dir)
+

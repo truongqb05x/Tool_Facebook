@@ -135,6 +135,20 @@ namespace FPlusClone.ViewModels
             get => _delayMax;
             set { if (_delayMax != value) { _delayMax = value; OnPropertyChanged(); } }
         }
+        
+        private int _delayAccountMin = 5;
+        public int DelayAccountMin
+        {
+            get => _delayAccountMin;
+            set { if (_delayAccountMin != value) { _delayAccountMin = value; OnPropertyChanged(); } }
+        }
+
+        private int _delayAccountMax = 10;
+        public int DelayAccountMax
+        {
+            get => _delayAccountMax;
+            set { if (_delayAccountMax != value) { _delayAccountMax = value; OnPropertyChanged(); } }
+        }
 
         private bool _editAfterPost = true;
         public bool EditAfterPost
@@ -179,6 +193,7 @@ namespace FPlusClone.ViewModels
             LoadComments();
             LoadGroupUids();
             LoadImageGroupUids();
+            LoadUIConfig();
 
             SelectImageFolderCommand = new RelayCommand(_ =>
             {
@@ -243,6 +258,73 @@ namespace FPlusClone.ViewModels
             });
         }
 
+        private void SaveUIConfig()
+        {
+            var config = new System.Collections.Generic.Dictionary<string, object>
+            {
+                { "MaxThreads", MaxThreads },
+                { "MaxComments", MaxComments },
+                { "IsTextComment", IsTextComment },
+                { "IsImageComment", IsImageComment },
+                { "IsImageCommentWithText", IsImageCommentWithText },
+                { "IsImageCommentAutoGenerate", IsImageCommentAutoGenerate },
+                { "EditAfterPost", EditAfterPost },
+                { "ImageFolderPath", ImageFolderPath },
+                { "IsSequentialComment", IsSequentialComment },
+                { "IsRandomComment", IsRandomComment },
+                { "IsRepeat", IsRepeat },
+                { "RepeatCount", RepeatCount },
+                { "ActionBeforePost", ActionBeforePost },
+                { "ConfigBeforePost", ConfigBeforePost },
+                { "ActionAfterPost", ActionAfterPost },
+                { "ConfigAfterPost", ConfigAfterPost },
+                { "DelayAccountMin", DelayAccountMin },
+                { "DelayAccountMax", DelayAccountMax },
+                { "IsResetDcom", IsResetDcom },
+                { "ResetDcomAfter", ResetDcomAfter },
+                { "IsCheckApproval", IsCheckApproval }
+            };
+            string json = System.Text.Json.JsonSerializer.Serialize(config);
+            System.IO.File.WriteAllText("spam_group_ui_settings.json", json);
+        }
+
+        private void LoadUIConfig()
+        {
+            try
+            {
+                if (System.IO.File.Exists("spam_group_ui_settings.json"))
+                {
+                    string json = System.IO.File.ReadAllText("spam_group_ui_settings.json");
+                    var config = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(json);
+                    if (config != null)
+                    {
+                        if (config.TryGetValue("MaxThreads", out var v)) MaxThreads = v.GetInt32();
+                        if (config.TryGetValue("MaxComments", out v)) MaxComments = v.GetInt32();
+                        if (config.TryGetValue("IsTextComment", out v)) IsTextComment = v.GetBoolean();
+                        if (config.TryGetValue("IsImageComment", out v)) IsImageComment = v.GetBoolean();
+                        if (config.TryGetValue("IsImageCommentWithText", out v)) IsImageCommentWithText = v.GetBoolean();
+                        if (config.TryGetValue("IsImageCommentAutoGenerate", out v)) IsImageCommentAutoGenerate = v.GetBoolean();
+                        if (config.TryGetValue("EditAfterPost", out v)) EditAfterPost = v.GetBoolean();
+                        if (config.TryGetValue("ImageFolderPath", out v)) ImageFolderPath = v.GetString();
+                        if (config.TryGetValue("IsSequentialComment", out v)) IsSequentialComment = v.GetBoolean();
+                        if (config.TryGetValue("IsRandomComment", out v)) IsRandomComment = v.GetBoolean();
+                        if (config.TryGetValue("IsRepeat", out v)) IsRepeat = v.GetBoolean();
+                        if (config.TryGetValue("RepeatCount", out v)) RepeatCount = v.GetInt32();
+                        if (config.TryGetValue("ActionBeforePost", out v)) ActionBeforePost = v.GetBoolean();
+                        if (config.TryGetValue("ConfigBeforePost", out v)) ConfigBeforePost = System.Text.Json.JsonSerializer.Deserialize<FPlusClone.Models.ActionConfig>(v.GetRawText());
+                        if (config.TryGetValue("ActionAfterPost", out v)) ActionAfterPost = v.GetBoolean();
+                        if (config.TryGetValue("ConfigAfterPost", out v)) ConfigAfterPost = System.Text.Json.JsonSerializer.Deserialize<FPlusClone.Models.ActionConfig>(v.GetRawText());
+                        if (config.TryGetValue("DelayAccountMin", out v)) DelayAccountMin = v.GetInt32();
+                        if (config.TryGetValue("DelayAccountMax", out v)) DelayAccountMax = v.GetInt32();
+                        if (config.TryGetValue("IsResetDcom", out v)) IsResetDcom = v.GetBoolean();
+                        if (config.TryGetValue("ResetDcomAfter", out v)) ResetDcomAfter = v.GetInt32();
+                        if (config.TryGetValue("IsCheckApproval", out v)) IsCheckApproval = v.GetBoolean();
+                    }
+                }
+            }
+            catch { }
+        }
+
         private void LoadComments()
         {
             if (System.IO.File.Exists(commentsFilePath))
@@ -253,7 +335,7 @@ namespace FPlusClone.ViewModels
                 {
                     if (!string.IsNullOrWhiteSpace(line))
                     {
-                        CommentsList.Add(new CommentModel { Index = index++, Content = line });
+                        CommentsList.Add(new CommentModel { Index = index++, Content = line.Replace("[NEWLINE]", "\n") });
                     }
                 }
             }
@@ -261,7 +343,7 @@ namespace FPlusClone.ViewModels
 
         private void SaveComments()
         {
-            var lines = CommentsList.Select(c => c.Content).ToArray();
+            var lines = CommentsList.Select(c => c.Content?.Replace("\r", "")?.Replace("\n", "[NEWLINE]")).ToArray();
             System.IO.File.WriteAllLines(commentsFilePath, lines);
         }
 
@@ -318,6 +400,7 @@ namespace FPlusClone.ViewModels
         private void StartTask()
         {
             if (IsRunning) return;
+            SaveUIConfig();
 
             var selectedUids = TaskAccounts.Select(t => t.Account.Uid).ToList();
             if (selectedUids.Count == 0)
@@ -366,6 +449,8 @@ namespace FPlusClone.ViewModels
                 ConfigBeforePost = ConfigBeforePost,
                 ActionAfterPost = ActionAfterPost,
                 ConfigAfterPost = ConfigAfterPost,
+                DelayAccountMin = DelayAccountMin,
+                DelayAccountMax = DelayAccountMax,
 
                 // Proxy từ cài đặt hệ thống (Settings Modal)
                 ProxyMethod = appSettings.ProxyMethod,
@@ -441,6 +526,8 @@ namespace FPlusClone.ViewModels
                                 if (acc != null)
                                 {
                                     acc.Status = "Die";
+                                    var mainVm = System.Windows.Application.Current.MainWindow?.DataContext as MainViewModel;
+                                    mainVm?.UpdateAccountStatus(uidStr, "Die");
                                 }
                             }
 
@@ -508,7 +595,7 @@ namespace FPlusClone.ViewModels
                         if (_runningProcess != null && _runningProcess.HasExited && _runningProcess.ExitCode == 0)
                         {
                             StatusText = "Đã kết thúc";
-                            System.Windows.MessageBox.Show("Tiến trình Spam Group đã hoàn thành toàn bộ công việc!", "Hoàn thành", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                            System.Windows.MessageBox.Show("Hoành thành!", "Hoàn thành", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                         }
                         else
                         {

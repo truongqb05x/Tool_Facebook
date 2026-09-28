@@ -3,7 +3,6 @@
 Các hàm bổ trợ chung (cleanup, URL handling, state detection, language switching)
 """
 import time
-import subprocess
 import random
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,21 +13,24 @@ from selenium.webdriver.common.keys import Keys
 
 
 def type_human_like(driver, text, element=None):
-    """Giả lập gõ phím từng chữ như người thật, xử lý xuống dòng cho Facebook"""
+    """Giả lập gõ phím từ từ, xử lý xuống dòng cho Facebook và tránh lỗi bị ngược chữ"""
+    # Focus vào element một lần duy nhất để không làm nhảy con trỏ
+    if element:
+        try:
+            element.click()
+            time.sleep(0.2)
+        except:
+            pass
+            
+    # Duyệt qua từng ký tự để gõ chậm như người
     for char in text:
         actions = ActionChains(driver)
-        if element:
-            if char == '\n':
-                actions.key_down(Keys.SHIFT).send_keys_to_element(element, Keys.ENTER).key_up(Keys.SHIFT).perform()
-            else:
-                actions.send_keys_to_element(element, char).perform()
+        if char == '\n':
+            actions.key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
+            time.sleep(random.uniform(0.1, 0.3))
         else:
-            if char == '\n':
-                actions.key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
-            else:
-                actions.send_keys(char).perform()
-        time.sleep(random.uniform(0.1, 0.4))
-
+            actions.send_keys(char).perform()
+            time.sleep(random.uniform(0.01, 0.08))
 
 
 def cleanup_seleniumwire(driver):
@@ -159,4 +161,37 @@ def wait_for_page_load(driver, timeout=15):
         except:
             pass
 
+import os
+import shutil
+import json
+from config import config
+from utils.locks import FILE_LOCK
+from utils.account_registry import load_proxy_mapping, save_proxy_mapping
+
+def get_global_profile_dir_from_settings():
+    curr = os.getcwd()
+    for _ in range(4):
+        candidate = os.path.join(curr, "settings.json")
+        if os.path.exists(candidate):
+            try:
+                with open(candidate, "r", encoding="utf-8") as f:
+                    settings = json.load(f)
+                    p = settings.get("ProfilePath", "")
+                    if p: return p
+            except:
+                pass
+        curr = os.path.dirname(curr)
+    return None
+
+def get_profile_path(uid, custom_profile_dir=None):
+    """Tính toán đường dẫn tuyệt đối của thư mục profile cho một UID"""
+    if not custom_profile_dir:
+        custom_profile_dir = get_global_profile_dir_from_settings()
+        
+    profile_dir = custom_profile_dir if custom_profile_dir else getattr(config, "PROFILE_DIR", "profiles")
+    if not profile_dir:
+        profile_dir = "profiles"
+    if not os.path.isabs(profile_dir):
+        profile_dir = os.path.join(os.getcwd(), profile_dir)
+    return os.path.join(profile_dir, uid)
 
