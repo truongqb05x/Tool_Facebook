@@ -462,22 +462,8 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                 
             SCANNED_GROUPS_CACHE[uid] = list(g_list)
 
-    # KHÔNG SHUFFLE NỮA MÀ LẤY LẦN LƯỢT THEO DANH SÁCH (ACCOUNT 1 -> GROUP 1, ACCOUNT 2 -> GROUP 2...)
-    acc_index = 0
-    if task_config:
-        selected_accounts = task_config.get("SelectedAccounts", [])
-        try:
-            acc_index = selected_accounts.index(uid)
-        except ValueError:
-            pass
-
     if g_list:
-        start_group_idx = (acc_index * max_comments) % len(g_list)
-        sequential_g_list = []
-        for i in range(len(g_list)):
-            idx = (start_group_idx + i) % len(g_list)
-            sequential_g_list.append(g_list[idx])
-        group_iterator = iter(sequential_g_list)
+        group_iterator = iter(g_list)
     else:
         group_iterator = iter([])
 
@@ -529,6 +515,10 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                 BLOCKED_ACCOUNTS.add(uid)
                 found_and_commented = False
                 break # Thoát khỏi retry_group_count loop
+                
+            if result in ("PRIVATE_GROUP", "MEMBERSHIP_MODAL"):
+                print(f"[{uid}]  Lý do chính đáng (Nhóm kín / Yêu cầu câu hỏi). Lấy group khác mà KHÔNG bị tính là lỗi...")
+                continue
             
             if result is True:
                 success_count += 1

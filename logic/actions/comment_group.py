@@ -215,7 +215,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 
             if is_private:
                 print(f"[{uid}] 🔒 Nhóm {g_id} là nhóm riêng tư hoặc đang chờ duyệt. Bỏ qua comment.")
-                return False
+                return "PRIVATE_GROUP"
         else:
             time.sleep(4)
             if "sorting_setting=CHRONOLOGICAL" not in driver.current_url:
@@ -471,7 +471,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             if _status in ("BLOCK_MODAL_DETECTED", "BLOCK_EDIT_DETECTED"):
                                 return _status
                             if _status == "MEMBERSHIP_MODAL":
-                                return False
+                                return "MEMBERSHIP_MODAL"
                             # ========================================================
                             
                             # ================= START EDIT & RE-COMMENT =================
@@ -697,7 +697,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
             if _status in ("BLOCK_MODAL_DETECTED", "BLOCK_EDIT_DETECTED"):
                 return _status
             if _status == "MEMBERSHIP_MODAL":
-                return False
+                return "MEMBERSHIP_MODAL"
             # =================================================================
 
             # ================= START EDIT & RE-COMMENT =================
