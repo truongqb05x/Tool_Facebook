@@ -172,63 +172,51 @@ def run_account_flow(cookie_line, window_index):
                     return False
                     
                 
-                # --- XỬ LÝ TRƯỜNG ĐẠI HỌC ---
-                print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_education")
-                time.sleep(5)
-                
-                print(f"[Thread-{flow_type}] Kiểm tra xem đã có Trường cao đẳng/đại học chưa...")
-                # Khi đã có, FB hiện nút aria-label="Chỉnh sửa trường cao đẳng/đại học"
-                xpath_edu_filled = "//*[@aria-label='Chỉnh sửa trường cao đẳng/đại học' or @aria-label='Edit college' or @aria-label='Edit university']"
-                if driver.find_elements(By.XPATH, xpath_edu_filled):
-                    print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường đại học rồi!")
+                # --- XỬ LÝ MỐI QUAN HỆ ---
+                print(f"[Thread-{flow_type}] Kiểm tra xem tài khoản đã có Tình trạng mối quan hệ chưa...")
+                # Khi đã có, FB hiện nút aria-label="Chỉnh sửa mối quan hệ"
+                xpath_rel_filled = "//*[@aria-label='Chỉnh sửa mối quan hệ' or @aria-label='Edit relationship' or @aria-label='Edit Relationship']"
+                if driver.find_elements(By.XPATH, xpath_rel_filled):
+                    print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn Tình trạng mối quan hệ rồi!")
                     return
-                else:
-                    print(f"[Thread-{flow_type}] Đang tìm nút 'Trường cao đẳng/đại học'...")
-                    xpath_edu_btn = "//*[contains(text(), 'Trường cao đẳng') or contains(text(), 'đại học') or contains(text(), 'College') or contains(text(), 'University')]"
-                    edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_edu_btn)))
                     
-                    print(f"[Thread-{flow_type}] Đã thấy mục, tiến hành click...")
-                    for el in edu_els:
-                        click_hard(driver, el)
-                        time.sleep(0.5)
+                print(f"[Thread-{flow_type}] Đang tìm nút 'Tình trạng mối quan hệ'...")
+                xpath_rel_btn = "//*[contains(text(), 'Tình trạng mối quan hệ') or contains(text(), 'Relationship status')]"
+                rel_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_rel_btn)))
+                
+                print(f"[Thread-{flow_type}] Đã thấy mục, tiến hành click...")
+                for el in rel_els:
+                    click_hard(driver, el)
+                    time.sleep(0.5)
+                
+                print(f"[Thread-{flow_type}] Đang chờ combobox 'Chọn tình trạng mối quan hệ' xuất hiện...")
+                xpath_combo = "//*[@aria-label='Chọn tình trạng mối quan hệ của bạn' or @aria-label='Select your relationship status']"
+                combo_el = wait_60.until(EC.presence_of_element_located((By.XPATH, xpath_combo)))
+                
+                print(f"[Thread-{flow_type}] Đã thấy combobox, tiến hành click...")
+                click_hard(driver, combo_el)
+                time.sleep(random.uniform(1.0, 1.5))
+                
+                print(f"[Thread-{flow_type}] Đang chờ danh sách tùy chọn xuất hiện...")
+                # Các lựa chọn dạng option trong listbox
+                xpath_options = "//div[@role='option' or @role='listbox']//span[contains(text(), 'Độc thân') or contains(text(), 'Đang hẹn hò') or contains(text(), 'Tìm hiểu') or contains(text(), 'Single') or contains(text(), 'In a relationship') or contains(text(), \"It's complicated\")]"
+                all_options = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_options)))
+                
+                print(f"[Thread-{flow_type}] Đã tìm thấy {len(all_options)} tùy chọn. Chọn ngẫu nhiên...")
+                chosen = random.choice(all_options)
+                print(f"[Thread-{flow_type}] Chọn: {chosen.text}")
+                click_hard(driver, chosen)
+                time.sleep(random.uniform(1.0, 2.0))
+                
+                print(f"[Thread-{flow_type}] Đang tìm và ấn nút Lưu...")
+                xpath_save = "//*[text()='Lưu' or text()='Save']/ancestor::div[@role='button'] | //*[text()='Lưu' or text()='Save']"
+                save_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_save)))
+                for s_el in save_els:
+                    click_hard(driver, s_el)
+                    time.sleep(0.5)
                     
-                    print(f"[Thread-{flow_type}] Đang chờ ô nhập tên trường xuất hiện...")
-                    xpath_input_edu = "//input[contains(@aria-label, 'đại học') or contains(@aria-label, 'cao đẳng') or contains(@aria-label, 'trường') or contains(@aria-label, 'College') or contains(@aria-label, 'University') or contains(@aria-label, 'School')]"
-                    input_edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_input_edu)))
-                    
-                    active_edu = None
-                    for in_el in input_edu_els:
-                        if click_hard(driver, in_el):
-                            active_edu = in_el
-                            break
-                        time.sleep(0.5)
-                    
-                    if active_edu:
-                        print(f"[Thread-{flow_type}] Đang nhập tên trường...")
-                        target_edu = "Quảng Bình"
-                        for char in target_edu:
-                            try: active_edu.send_keys(char)
-                            except: pass
-                            time.sleep(random.uniform(0.1, 0.3))
-                        
-                        print(f"[Thread-{flow_type}] Đang chờ danh sách gợi ý trường xuất hiện...")
-                        xpath_opts = "//ul[@role='listbox']//li[@role='option']"
-                        edu_options = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_opts)))
-                        
-                        print(f"[Thread-{flow_type}] Đã tìm thấy {len(edu_options)} gợi ý. Chọn ngẫu nhiên...")
-                        random_edu = random.choice(edu_options)
-                        click_hard(driver, random_edu)
-                        time.sleep(random.uniform(1.0, 2.0))
-                        
-                        print(f"[Thread-{flow_type}] Đang ấn nút Lưu...")
-                        xpath_save = "//*[text()='Lưu' or text()='Save']/ancestor::div[@role='button'] | //*[text()='Lưu' or text()='Save']"
-                        save_edu = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_save)))
-                        for s_el in save_edu:
-                            click_hard(driver, s_el)
-                            time.sleep(0.5)
-                        
-                        print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Trường đại học!")
+                print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Mối quan hệ!")
+                time.sleep(3)
             except Exception as e:
                 print(f"[Thread-{flow_type}] Lỗi khi tương tác trang cá nhân: {e}")
         else:

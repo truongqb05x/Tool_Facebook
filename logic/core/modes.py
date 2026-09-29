@@ -178,7 +178,7 @@ def run_cli():
 
         elif choice == "5":
             # MODE 5: JOIN GROUPS
-            print(f" BẮT ĐẦU CHẾ ĐỘ 5: Join Groups ({max_threads} luồng)")
+            #print(f" BẮT ĐẦU CHẾ ĐỘ 5: Join Groups ({max_threads} luồng)")
             
             if task_config and "GroupUids" in task_config:
                 group_join_list = task_config.get("GroupUids", [])
@@ -198,12 +198,12 @@ def run_cli():
                 print(" Danh sách tài khoản trống.")
                 sys.exit(0)
 
-            print(f" Bắt đầu chạy danh sách ({len(current_cookies)} tài khoản)...")
+            #print(f" Bắt đầu chạy danh sách ({len(current_cookies)} tài khoản)...")
             batch_id = 0
             for i in range(0, len(current_cookies), max_threads):
                 batch = current_cookies[i:i+max_threads]
                 proxy_turn = f"1_{batch_id}"
-                print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                 with ThreadPoolExecutor(max_workers=max_threads) as executor:
                     futures = []
                     for idx, cookie in enumerate(batch):
@@ -213,7 +213,7 @@ def run_cli():
                         f.result()
                 batch_id += 1
             
-            print(f" Đã chạy xong toàn bộ danh sách. Dừng chương trình.")
+            print(f" HOÀN THÀNH.")
             sys.exit(0)
 
         elif choice == "3":

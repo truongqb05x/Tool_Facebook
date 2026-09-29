@@ -139,98 +139,122 @@ def run_account_flow(cookie_line, window_index):
         
         if login_verified:
             print(f"[Thread-{flow_type}] Xác minh login thành công.")
+            
             try:
-                print(f"[Thread-{flow_type}] Truy cập vào tab Chi tiết cá nhân của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_personal_details")
+                print(f"[Thread-{flow_type}] Truy cập trực tiếp trang đổi Tên của Account Center...")
+                driver.get(f"https://accountscenter.facebook.com/profiles/{uid}/name")
+                
                 from selenium.webdriver.support.ui import WebDriverWait
                 from selenium.webdriver.support import expected_conditions as EC
                 wait_60 = WebDriverWait(driver, 60)
                 
-                print(f"[Thread-{flow_type}] Đang chờ trang tải...")
-                time.sleep(5)
+                print(f"[Thread-{flow_type}] Đã vào trang đổi Tên, kiểm tra điều kiện 60 ngày...")
                 
-                def click_hard(drv, element):
-                    from selenium.webdriver.common.action_chains import ActionChains
-                    try: drv.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)
-                    except: pass
+                # Kiểm tra thông báo giới hạn
+                xpath_limit = "//*[contains(text(), 'chưa thể đổi tên') or contains(text(), 'You can\\'t change your name') or contains(text(), '60 ngày qua') or contains(text(), '60 days')]"
+                try:
+                    wait_3 = WebDriverWait(driver, 3)
+                    wait_3.until(EC.presence_of_element_located((By.XPATH, xpath_limit)))
+                    print(f"[Thread-{flow_type}] LỖI: Tài khoản KHÔNG ĐỦ ĐIỀU KIỆN (Bị kẹt 60 ngày)! Dừng luồng.")
+                    return # Thoát hàm run_account_flow luôn vì không thể đổi tên
+                except:
+                    pass # Nếu không bắt được thông báo trong 3s thì an toàn, đi tiếp
+                
+                print(f"[Thread-{flow_type}] Chờ giao diện nhập Tên/Họ xuất hiện...")
+                xpath_input_ten = "//input[following-sibling::label[text()='Tên' or text()='First name']]"
+                xpath_input_ho = "//input[following-sibling::label[text()='Họ' or text()='Last name']]"
+                
+                input_ten = wait_60.until(EC.presence_of_element_located((By.XPATH, xpath_input_ten)))
+                input_ho = wait_60.until(EC.presence_of_element_located((By.XPATH, xpath_input_ho)))
+                time.sleep(2)
+                
+                # Đọc file dữ liệu
+                import os, random
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                ho_path = os.path.join(current_dir, "resources", "ho.txt")
+                ten_path = os.path.join(current_dir, "resources", "ten.txt")
+                
+                with open(ho_path, 'r', encoding='utf-8') as f:
+                    list_ho = [x.strip() for x in f.readlines() if x.strip()]
+                with open(ten_path, 'r', encoding='utf-8') as f:
+                    list_ten = [x.strip() for x in f.readlines() if x.strip()]
+                    
+                # Xử lý random
+                random_ho = random.choice(list_ho)
+                random_ten = random.choice(list_ten)
+                
+                # 30% chỉ lấy 1 từ đầu cho Họ
+                if random.random() < 0.3:
+                    random_ho = random_ho.split()[0]
+                
+                # Hàm gõ như người thật
+                def type_like_human(element, text):
+                    from selenium.webdriver.common.keys import Keys
+                    # Xoá trắng dữ liệu cũ (Ctrl+A -> Backspace)
+                    element.send_keys(Keys.CONTROL + "a")
+                    time.sleep(0.3)
+                    element.send_keys(Keys.BACKSPACE)
                     time.sleep(0.5)
-                    try: element.click(); return True
-                    except: pass
-                    try: ActionChains(drv).move_to_element(element).click().perform(); return True
-                    except: pass
-                    try: drv.execute_script("arguments[0].click();", element)
-                    except: pass
-                    try:
-                        drv.execute_script("""
-                            var el = arguments[0];
-                            for(var i=0; i<8; i++) {
-                                if(el) { try { el.click(); } catch(e){} el = el.parentElement; }
-                            }
-                        """, element)
-                        return True
-                    except: pass
-                    return False
                     
+                    # Gõ từng ký tự
+                    for char in text:
+                        element.send_keys(char)
+                        time.sleep(random.uniform(0.05, 0.2))
+                        
+                print(f"[Thread-{flow_type}] Đang nhập Họ: {random_ho}")
+                type_like_human(input_ho, random_ho)
+                time.sleep(random.uniform(1, 2))
                 
-                # --- XỬ LÝ TRƯỜNG ĐẠI HỌC ---
-                print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_education")
-                time.sleep(5)
+                print(f"[Thread-{flow_type}] Đang nhập Tên: {random_ten}")
+                type_like_human(input_ten, random_ten)
+                time.sleep(random.uniform(1, 2))
                 
-                print(f"[Thread-{flow_type}] Kiểm tra xem đã có Trường cao đẳng/đại học chưa...")
-                # Khi đã có, FB hiện nút aria-label="Chỉnh sửa trường cao đẳng/đại học"
-                xpath_edu_filled = "//*[@aria-label='Chỉnh sửa trường cao đẳng/đại học' or @aria-label='Edit college' or @aria-label='Edit university']"
-                if driver.find_elements(By.XPATH, xpath_edu_filled):
-                    print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường đại học rồi!")
-                    return
-                else:
-                    print(f"[Thread-{flow_type}] Đang tìm nút 'Trường cao đẳng/đại học'...")
-                    xpath_edu_btn = "//*[contains(text(), 'Trường cao đẳng') or contains(text(), 'đại học') or contains(text(), 'College') or contains(text(), 'University')]"
-                    edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_edu_btn)))
-                    
-                    print(f"[Thread-{flow_type}] Đã thấy mục, tiến hành click...")
-                    for el in edu_els:
-                        click_hard(driver, el)
-                        time.sleep(0.5)
-                    
-                    print(f"[Thread-{flow_type}] Đang chờ ô nhập tên trường xuất hiện...")
-                    xpath_input_edu = "//input[contains(@aria-label, 'đại học') or contains(@aria-label, 'cao đẳng') or contains(@aria-label, 'trường') or contains(@aria-label, 'College') or contains(@aria-label, 'University') or contains(@aria-label, 'School')]"
-                    input_edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_input_edu)))
-                    
-                    active_edu = None
-                    for in_el in input_edu_els:
-                        if click_hard(driver, in_el):
-                            active_edu = in_el
-                            break
-                        time.sleep(0.5)
-                    
-                    if active_edu:
-                        print(f"[Thread-{flow_type}] Đang nhập tên trường...")
-                        target_edu = "Quảng Bình"
-                        for char in target_edu:
-                            try: active_edu.send_keys(char)
+                print(f"[Thread-{flow_type}] Đã điền xong Họ và Tên mới!")
+                
+                # Chờ 3-5s như người thật
+                delay_save = random.uniform(3.0, 5.0)
+                print(f"[Thread-{flow_type}] Đợi {delay_save:.1f}s trước khi ấn Xem lại thay đổi...")
+                time.sleep(delay_save)
+                
+                print(f"[Thread-{flow_type}] Đang tìm nút 'Xem lại thay đổi'...")
+                xpath_review = "//*[contains(text(), 'Xem lại thay đổi') or contains(text(), 'Review change')]"
+                review_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_review)))
+                
+                # Thử click để vượt qua aria-hidden của React
+                for rel in review_els:
+                    try: rel.click(); break
+                    except:
+                        try: driver.execute_script("arguments[0].click();", rel); break
+                        except:
+                            try: driver.execute_script("arguments[0].parentElement.click();", rel); break
                             except: pass
-                            time.sleep(random.uniform(0.1, 0.3))
-                        
-                        print(f"[Thread-{flow_type}] Đang chờ danh sách gợi ý trường xuất hiện...")
-                        xpath_opts = "//ul[@role='listbox']//li[@role='option']"
-                        edu_options = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_opts)))
-                        
-                        print(f"[Thread-{flow_type}] Đã tìm thấy {len(edu_options)} gợi ý. Chọn ngẫu nhiên...")
-                        random_edu = random.choice(edu_options)
-                        click_hard(driver, random_edu)
-                        time.sleep(random.uniform(1.0, 2.0))
-                        
-                        print(f"[Thread-{flow_type}] Đang ấn nút Lưu...")
-                        xpath_save = "//*[text()='Lưu' or text()='Save']/ancestor::div[@role='button'] | //*[text()='Lưu' or text()='Save']"
-                        save_edu = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_save)))
-                        for s_el in save_edu:
-                            click_hard(driver, s_el)
-                            time.sleep(0.5)
-                        
-                        print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Trường đại học!")
-            except Exception as e:
-                print(f"[Thread-{flow_type}] Lỗi khi tương tác trang cá nhân: {e}")
+                            
+                print(f"[Thread-{flow_type}] Đã click xong nút Xem lại thay đổi!")
+                
+                print(f"[Thread-{flow_type}] Đợi popup 'Xem trước tên mới' và nút Xong xuất hiện...")
+                xpath_done = "//*[text()='Xong' or text()='Done' or contains(text(), 'Done')]"
+                done_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_done)))
+                time.sleep(2) # Chờ popup load xong
+                
+                print(f"[Thread-{flow_type}] Đã thấy nút Xong, tiến hành click chốt sổ...")
+                for del_btn in done_els:
+                    try: del_btn.click(); break
+                    except:
+                        try: driver.execute_script("arguments[0].click();", del_btn); break
+                        except:
+                            try: driver.execute_script("arguments[0].parentElement.click();", del_btn); break
+                            except: pass
+                            
+                print(f"[Thread-{flow_type}] Đang chờ trang chuyển hướng để xác nhận hoàn thành (tối đa 60s)...")
+                def is_done_redirected(drv):
+                    curr = drv.current_url or ""
+                    return f"/profiles/{uid}" in curr and "/name" not in curr
+                    
+                wait_60.until(is_done_redirected)
+                print(f"[Thread-{flow_type}] Chúc mừng! Đã đổi Tên hoàn tất và quay về trang Account Center thành công!")
+                
+            except Exception as ex:
+                print(f"[Thread-{flow_type}] Lỗi khi tương tác Account Center: {ex}")
         else:
             print(f"[Thread-{flow_type}] Không thể login, dừng luồng này.")
             return

@@ -139,98 +139,56 @@ def run_account_flow(cookie_line, window_index):
         
         if login_verified:
             print(f"[Thread-{flow_type}] Xác minh login thành công.")
+            
             try:
-                print(f"[Thread-{flow_type}] Truy cập vào tab Chi tiết cá nhân của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_personal_details")
+                print(f"[Thread-{flow_type}] Đang tìm danh sách story để xem...")
+                driver.get("https://www.facebook.com/")
+                
                 from selenium.webdriver.support.ui import WebDriverWait
                 from selenium.webdriver.support import expected_conditions as EC
                 wait_60 = WebDriverWait(driver, 60)
                 
-                print(f"[Thread-{flow_type}] Đang chờ trang tải...")
-                time.sleep(5)
+                # Chờ load xong trang chủ
+                time.sleep(5) 
                 
-                def click_hard(drv, element):
-                    from selenium.webdriver.common.action_chains import ActionChains
-                    try: drv.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)
-                    except: pass
-                    time.sleep(0.5)
-                    try: element.click(); return True
-                    except: pass
-                    try: ActionChains(drv).move_to_element(element).click().perform(); return True
-                    except: pass
-                    try: drv.execute_script("arguments[0].click();", element)
-                    except: pass
-                    try:
-                        drv.execute_script("""
-                            var el = arguments[0];
-                            for(var i=0; i<8; i++) {
-                                if(el) { try { el.click(); } catch(e){} el = el.parentElement; }
-                            }
-                        """, element)
-                        return True
-                    except: pass
-                    return False
-                    
+                # Tìm thẻ a trỏ tới trang xem tin (bỏ qua trang tạo tin)
+                xpath_story = "//a[contains(@href, '/stories/') and not(contains(@href, '/stories/create'))]"
+                wait_60.until(EC.presence_of_element_located((By.XPATH, xpath_story)))
+                stories = driver.find_elements(By.XPATH, xpath_story)
                 
-                # --- XỬ LÝ TRƯỜNG ĐẠI HỌC ---
-                print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_education")
-                time.sleep(5)
-                
-                print(f"[Thread-{flow_type}] Kiểm tra xem đã có Trường cao đẳng/đại học chưa...")
-                # Khi đã có, FB hiện nút aria-label="Chỉnh sửa trường cao đẳng/đại học"
-                xpath_edu_filled = "//*[@aria-label='Chỉnh sửa trường cao đẳng/đại học' or @aria-label='Edit college' or @aria-label='Edit university']"
-                if driver.find_elements(By.XPATH, xpath_edu_filled):
-                    print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường đại học rồi!")
-                    return
+                if not stories:
+                    print(f"[Thread-{flow_type}] Không có story nào hiển thị!")
                 else:
-                    print(f"[Thread-{flow_type}] Đang tìm nút 'Trường cao đẳng/đại học'...")
-                    xpath_edu_btn = "//*[contains(text(), 'Trường cao đẳng') or contains(text(), 'đại học') or contains(text(), 'College') or contains(text(), 'University')]"
-                    edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_edu_btn)))
-                    
-                    print(f"[Thread-{flow_type}] Đã thấy mục, tiến hành click...")
-                    for el in edu_els:
-                        click_hard(driver, el)
-                        time.sleep(0.5)
-                    
-                    print(f"[Thread-{flow_type}] Đang chờ ô nhập tên trường xuất hiện...")
-                    xpath_input_edu = "//input[contains(@aria-label, 'đại học') or contains(@aria-label, 'cao đẳng') or contains(@aria-label, 'trường') or contains(@aria-label, 'College') or contains(@aria-label, 'University') or contains(@aria-label, 'School')]"
-                    input_edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_input_edu)))
-                    
-                    active_edu = None
-                    for in_el in input_edu_els:
-                        if click_hard(driver, in_el):
-                            active_edu = in_el
-                            break
-                        time.sleep(0.5)
-                    
-                    if active_edu:
-                        print(f"[Thread-{flow_type}] Đang nhập tên trường...")
-                        target_edu = "Quảng Bình"
-                        for char in target_edu:
-                            try: active_edu.send_keys(char)
-                            except: pass
-                            time.sleep(random.uniform(0.1, 0.3))
+                    selected_story = random.choice(stories)
+                    print(f"[Thread-{flow_type}] Đã tìm thấy {len(stories)} story, đang click ngẫu nhiên...")
+                    try:
+                        selected_story.click()
+                    except:
+                        driver.execute_script("arguments[0].click();", selected_story)
                         
-                        print(f"[Thread-{flow_type}] Đang chờ danh sách gợi ý trường xuất hiện...")
-                        xpath_opts = "//ul[@role='listbox']//li[@role='option']"
-                        edu_options = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_opts)))
+                    print(f"[Thread-{flow_type}] Kiểm tra modal 'Bạn đang xem Tin' (Nút OK)...")
+                    time.sleep(3) # Đợi giao diện xem tin tải lên
+                    
+                    try:
+                        # Tìm nút OK bên trong modal
+                        ok_btn = driver.find_element(By.XPATH, "//div[@aria-modal='true']//div[@aria-label='OK'] | //div[@aria-label='OK' and @role='button']")
+                        if ok_btn.is_displayed():
+                            print(f"[Thread-{flow_type}] Phát hiện modal OK, đang ấn bỏ qua...")
+                            try:
+                                ok_btn.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", ok_btn)
+                    except Exception:
+                        print(f"[Thread-{flow_type}] Không có modal OK (có thể không xuất hiện hoặc tự ẩn).")
                         
-                        print(f"[Thread-{flow_type}] Đã tìm thấy {len(edu_options)} gợi ý. Chọn ngẫu nhiên...")
-                        random_edu = random.choice(edu_options)
-                        click_hard(driver, random_edu)
-                        time.sleep(random.uniform(1.0, 2.0))
-                        
-                        print(f"[Thread-{flow_type}] Đang ấn nút Lưu...")
-                        xpath_save = "//*[text()='Lưu' or text()='Save']/ancestor::div[@role='button'] | //*[text()='Lưu' or text()='Save']"
-                        save_edu = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_save)))
-                        for s_el in save_edu:
-                            click_hard(driver, s_el)
-                            time.sleep(0.5)
-                        
-                        print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Trường đại học!")
-            except Exception as e:
-                print(f"[Thread-{flow_type}] Lỗi khi tương tác trang cá nhân: {e}")
+                    watch_time = random.randint(30, 50)
+                    print(f"[Thread-{flow_type}] Đang xem story... chờ {watch_time} giây!")
+                    time.sleep(watch_time)
+                    
+                    driver.get("https://www.facebook.com/")
+                    print(f"[Thread-{flow_type}] Đã xem xong, quay lại trang chủ thành công!")
+            except Exception as ex:
+                print(f"[Thread-{flow_type}] Lỗi khi click xem story: {ex}")
         else:
             print(f"[Thread-{flow_type}] Không thể login, dừng luồng này.")
             return

@@ -121,7 +121,7 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         return True
 
     if execution_mode == 5:
-        print(f"[{uid}]  MODE 5: Tham gia nhóm (Join Groups)...")
+        #print(f"[{uid}]  MODE 5: Tham gia nhóm (Join Groups)...")
         if not group_join_list:
             print(f"[{uid}]  Không có danh sách nhóm để tham gia.")
             return False
@@ -135,6 +135,8 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             
             try:
                 success = join_single_group(driver, wait, uid, gid)
+                if success:
+                    print(f"[{uid}] Đã join {gid}")
                 if not success:
                     print(f"[{uid}] ⚠️ Lỗi khi tham gia {gid}, tiến hành thử lại...")
                     # Kiểm tra xem driver còn sống không
@@ -233,14 +235,14 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             idx += 1
             if idx < len(group_join_list):
                 delay = random.randint(5, 10)
-                print(f"[{uid}]  Nghỉ {delay}s trước khi chuyển sang nhóm tiếp theo...")
+                #print(f"[{uid}]  Nghỉ {delay}s trước khi chuyển sang nhóm tiếp theo...")
                 time.sleep(delay)
         
-        print(f"[{uid}]  MODE 5: Hoàn thành danh sách tham gia nhóm.")
+        #print(f"[{uid}]  MODE 5: Hoàn thành danh sách tham gia nhóm.")
         return True
 
     if execution_mode == 7:
-        print(f"[{uid}]  MODE 7: Rời nhóm (Out Group)...")
+        #print(f"[{uid}]  MODE 7: Rời nhóm (Out Group)...")
         out_groups_by_mode(driver, uid, out_group_mode, out_group_list)
         print(f"[{uid}]  MODE 7: Hoàn thành.")
         return True
@@ -388,12 +390,13 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             from config.config import AVATAR_FOLDER, AVATAR_STT_FILE
             
             avatar_folder = task_config.get("AvatarFolderPath", AVATAR_FOLDER) if task_config else AVATAR_FOLDER
+            is_skip = task_config.get("IsSkipIfHasAvatar", False) if task_config else False
             
-            result = upload_avatar_and_status(driver, wait, avatar_folder, AVATAR_STT_FILE)
+            result = upload_avatar_and_status(driver, wait, avatar_folder, AVATAR_STT_FILE, is_skip_if_has_avatar=is_skip)
             if result:
-                print(f"[{uid}]  MODE 10: Upload avatar thành công.")
+                print(f"[{uid}]  MODE 10: Xử lý avatar thành công.")
             else:
-                print(f"[{uid}]  MODE 10: Upload avatar thất bại.")
+                print(f"[{uid}]  MODE 10: Xử lý avatar thất bại hoặc bị bỏ qua.")
         else:
             print(f"[{uid}]  Không chọn Upload Avatar, bỏ qua bước này.")
             

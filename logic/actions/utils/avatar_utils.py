@@ -1,4 +1,4 @@
-﻿# avatar_utils.py
+# avatar_utils.py
 import os
 import random
 from selenium.webdriver.common.by import By
@@ -26,13 +26,13 @@ def get_random_stt(file_path):
         lines = [l.strip() for l in f if l.strip()]
     return random.choice(lines) if lines else "Update profile picture"
 
-def upload_avatar_and_status(driver, wait, avatar_folder, stt_file):
+def upload_avatar_and_status(driver, wait, avatar_folder, stt_file, is_skip_if_has_avatar=False):
     try:
-        print(" Truy cập trang cá nhân...")
+        #print(" Truy cập trang cá nhân...")
         driver.get("https://www.facebook.com/me")
 
         # 1️⃣ Click icon avatar
-        print(" Click icon máy ảnh")
+        #print(" Click icon máy ảnh")
         try:
             avatar_btn = wait.until(EC.element_to_be_clickable((
                 By.XPATH,
@@ -48,9 +48,25 @@ def upload_avatar_and_status(driver, wait, avatar_folder, stt_file):
         driver.execute_script("arguments[0].click();", avatar_btn)
 
         # 2️⃣ Chờ dialog & click "Choose profile picture"
-        print(" Chọn ảnh đại diện")
+        #print(" Đang mở menu đổi avatar...")
         dialog = wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']")))
 
+        if is_skip_if_has_avatar:
+            try:
+                import time
+                time.sleep(1) # wait for menu items to render
+                view_btn = driver.find_elements(By.XPATH, "//span[contains(text(),'Xem ảnh đại diện') or contains(text(),'View profile picture')]")
+                if view_btn:
+                    print(" Phát hiện tài khoản đã có avatar. Bỏ qua upload.")
+                    # Bấm ESC để đóng menu
+                    from selenium.webdriver.common.keys import Keys
+                    from selenium.webdriver.common.action_chains import ActionChains
+                    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+                    return True
+            except Exception as e:
+                pass
+
+        #print(" Chọn nút tải ảnh lên...")
         try:
             choose_btn = wait.until(EC.element_to_be_clickable((
                 By.XPATH,
@@ -64,7 +80,7 @@ def upload_avatar_and_status(driver, wait, avatar_folder, stt_file):
         driver.execute_script("arguments[0].click();", choose_btn)
 
         # 3️⃣ Upload file
-        print(" Upload ảnh")
+        #print(" Upload ảnh")
         file_input = wait.until(EC.presence_of_element_located((
             By.XPATH, "//div[@role='dialog']//input[@type='file']"
         )))
@@ -76,17 +92,17 @@ def upload_avatar_and_status(driver, wait, avatar_folder, stt_file):
 
         file_path = get_random_image(avatar_folder)
         file_input.send_keys(file_path)
-        print(f" Đã chọn: {os.path.basename(file_path)}")
+       # print(f" Đã chọn: {os.path.basename(file_path)}")
 
         # 4️⃣ Chờ ảnh load xong → nút Save enable
-        print(" Chờ ảnh load")
+        #print(" Chờ ảnh load")
         wait.until(EC.element_to_be_clickable((
             By.XPATH,
             "//div[@role='button']//span[text()='Save' or text()='Lưu']"
         )))
 
         # 5️⃣ Điền status (nếu có)
-        print(" Điền mô tả")
+        #print(" Điền mô tả")
         try:
             textarea = wait.until(EC.presence_of_element_located((
                 By.XPATH,
@@ -97,7 +113,7 @@ def upload_avatar_and_status(driver, wait, avatar_folder, stt_file):
             print(" Không tìm thấy ô mô tả, bỏ qua")
 
         # 6️⃣ Lưu
-        print(" Nhấn Lưu")
+        #print(" Nhấn Lưu")
         save_btn = wait.until(EC.element_to_be_clickable((
             By.XPATH,
             "//div[@role='button']//span[text()='Save' or text()='Lưu']"

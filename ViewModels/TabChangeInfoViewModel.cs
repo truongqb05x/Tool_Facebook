@@ -16,6 +16,13 @@ namespace FPlusClone.ViewModels
             set { if (_isUpAvatar != value) { _isUpAvatar = value; OnPropertyChanged(); } }
         }
 
+        private bool _isSkipIfHasAvatar = false;
+        public bool IsSkipIfHasAvatar
+        {
+            get => _isSkipIfHasAvatar;
+            set { if (_isSkipIfHasAvatar != value) { _isSkipIfHasAvatar = value; OnPropertyChanged(); } }
+        }
+
         private string _avatarFolderPath = "";
         public string AvatarFolderPath
         {
@@ -124,6 +131,7 @@ namespace FPlusClone.ViewModels
             {
                 MaxThreads = MaxThreads,
                 IsUpAvatar = IsUpAvatar,
+                IsSkipIfHasAvatar = IsSkipIfHasAvatar,
                 AvatarFolderPath = AvatarFolderPath,
                 SelectedAccountsInfo = accountLines,
                 ProxyMethod = appSettings.ProxyMethod,

@@ -146,8 +146,18 @@ def run_account_flow(cookie_line, window_index):
                 from selenium.webdriver.support import expected_conditions as EC
                 wait_60 = WebDriverWait(driver, 60)
                 
-                print(f"[Thread-{flow_type}] Đang chờ trang tải...")
+                print(f"[Thread-{flow_type}] Đang chờ trang tải và kiểm tra xem tài khoản đã có thông tin Tỉnh/Thành phố chưa...")
                 time.sleep(5)
+                
+                # Nếu đã có, FB sẽ hiện nút có aria-label chứa chữ 'Chỉnh sửa' (Edit) kèm 'tỉnh/thành phố' (current city)
+                xpath_already_filled = "//*[@aria-label and (contains(@aria-label, 'Chỉnh sửa') or contains(@aria-label, 'chỉnh sửa') or contains(@aria-label, 'Edit') or contains(@aria-label, 'edit')) and (contains(@aria-label, 'tỉnh/thành phố') or contains(@aria-label, 'Tỉnh/thành phố') or contains(@aria-label, 'Tỉnh/Thành phố') or contains(@aria-label, 'current city') or contains(@aria-label, 'Current city'))]"
+                if driver.find_elements(By.XPATH, xpath_already_filled):
+                    print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Tỉnh/Thành phố hiện tại rồi!")
+                    return # Hoặc đi tới bước tiếp theo nếu sau này có code
+                    
+                print(f"[Thread-{flow_type}] Đang tìm nút Thêm 'Tỉnh/thành phố hiện tại'...")
+                xpath_city = "//*[contains(text(), 'Tỉnh/thành phố') or contains(text(), 'tỉnh/thành phố') or contains(text(), 'Tỉnh/Thành phố') or contains(text(), 'Current city') or contains(text(), 'current city')]"
+                city_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_city)))
                 
                 def click_hard(drv, element):
                     from selenium.webdriver.common.action_chains import ActionChains
@@ -171,64 +181,64 @@ def run_account_flow(cookie_line, window_index):
                     except: pass
                     return False
                     
+                print(f"[Thread-{flow_type}] Đã thấy mục, tiến hành click...")
+                for el in city_els:
+                    click_hard(driver, el)
+                    time.sleep(0.5)
+                    
+                print(f"[Thread-{flow_type}] Đã click thành công vào mục Tỉnh/thành phố!")
                 
-                # --- XỬ LÝ TRƯỜNG ĐẠI HỌC ---
-                print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_education")
-                time.sleep(5)
+                print(f"[Thread-{flow_type}] Đang chờ ô nhập 'Tỉnh/Thành phố hiện tại' xuất hiện...")
+                xpath_input_city = "//input[@aria-label='Tỉnh/Thành phố hiện tại' or contains(@aria-label, 'Tỉnh/thành phố') or contains(@aria-label, 'Current city')]"
+                input_city_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_input_city)))
                 
-                print(f"[Thread-{flow_type}] Kiểm tra xem đã có Trường cao đẳng/đại học chưa...")
-                # Khi đã có, FB hiện nút aria-label="Chỉnh sửa trường cao đẳng/đại học"
-                xpath_edu_filled = "//*[@aria-label='Chỉnh sửa trường cao đẳng/đại học' or @aria-label='Edit college' or @aria-label='Edit university']"
-                if driver.find_elements(By.XPATH, xpath_edu_filled):
-                    print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường đại học rồi!")
-                    return
-                else:
-                    print(f"[Thread-{flow_type}] Đang tìm nút 'Trường cao đẳng/đại học'...")
-                    xpath_edu_btn = "//*[contains(text(), 'Trường cao đẳng') or contains(text(), 'đại học') or contains(text(), 'College') or contains(text(), 'University')]"
-                    edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_edu_btn)))
+                print(f"[Thread-{flow_type}] Đã thấy ô nhập liệu, tiến hành click...")
+                active_input = None
+                for in_el in input_city_els:
+                    if click_hard(driver, in_el):
+                        active_input = in_el
+                        break
+                    time.sleep(0.5)
                     
-                    print(f"[Thread-{flow_type}] Đã thấy mục, tiến hành click...")
-                    for el in edu_els:
-                        click_hard(driver, el)
+                if active_input:
+                    print(f"[Thread-{flow_type}] Đang nhập chữ vào ô tìm kiếm...")
+                    target_city = "Quảng Bình"
+                    for char in target_city:
+                        try: active_input.send_keys(char)
+                        except: pass
+                        time.sleep(random.uniform(0.1, 0.3))
+                        
+                    print(f"[Thread-{flow_type}] Đang chờ danh sách gợi ý xuất hiện...")
+                    xpath_options = "//ul[@role='listbox']//li[@role='option']"
+                    options = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_options)))
+                    
+                    print(f"[Thread-{flow_type}] Đã tìm thấy {len(options)} gợi ý. Chọn ngẫu nhiên 1 gợi ý...")
+                    random_option = random.choice(options)
+                    click_hard(driver, random_option)
+                    time.sleep(random.uniform(1.0, 2.0))
+                    
+                    print(f"[Thread-{flow_type}] Đang chờ nút 'Lưu' xuất hiện để lưu thay đổi...")
+                    xpath_save = "//*[text()='Lưu' or text()='Save']/ancestor::div[@role='button'] | //*[text()='Lưu' or text()='Save']"
+                    save_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_save)))
+                    
+                    for s_el in save_els:
+                        click_hard(driver, s_el)
                         time.sleep(0.5)
+                        
+                    print(f"[Thread-{flow_type}] Đang chờ popup xác nhận 'Chia sẻ ngay trên Bảng feed?' (tối đa 60s)...")
+                    xpath_success = "//*[contains(text(), 'Chia sẻ ngay') or contains(text(), 'Share to Feed') or contains(text(), 'Bảng feed')]"
+                    wait_60.until(EC.presence_of_element_located((By.XPATH, xpath_success)))
                     
-                    print(f"[Thread-{flow_type}] Đang chờ ô nhập tên trường xuất hiện...")
-                    xpath_input_edu = "//input[contains(@aria-label, 'đại học') or contains(@aria-label, 'cao đẳng') or contains(@aria-label, 'trường') or contains(@aria-label, 'College') or contains(@aria-label, 'University') or contains(@aria-label, 'School')]"
-                    input_edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_input_edu)))
-                    
-                    active_edu = None
-                    for in_el in input_edu_els:
-                        if click_hard(driver, in_el):
-                            active_edu = in_el
-                            break
-                        time.sleep(0.5)
-                    
-                    if active_edu:
-                        print(f"[Thread-{flow_type}] Đang nhập tên trường...")
-                        target_edu = "Quảng Bình"
-                        for char in target_edu:
-                            try: active_edu.send_keys(char)
-                            except: pass
-                            time.sleep(random.uniform(0.1, 0.3))
+                    print(f"[Thread-{flow_type}] Đã cập nhật thành công! Tìm và ấn nút 'Không' (để không share lên tường)...")
+                    try:
+                        xpath_no = "//*[text()='Không' or text()='No']/ancestor::div[@role='button'] | //*[text()='Không' or text()='No']"
+                        no_els = driver.find_elements(By.XPATH, xpath_no)
+                        for n_el in no_els:
+                            click_hard(driver, n_el)
+                    except:
+                        pass
                         
-                        print(f"[Thread-{flow_type}] Đang chờ danh sách gợi ý trường xuất hiện...")
-                        xpath_opts = "//ul[@role='listbox']//li[@role='option']"
-                        edu_options = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_opts)))
-                        
-                        print(f"[Thread-{flow_type}] Đã tìm thấy {len(edu_options)} gợi ý. Chọn ngẫu nhiên...")
-                        random_edu = random.choice(edu_options)
-                        click_hard(driver, random_edu)
-                        time.sleep(random.uniform(1.0, 2.0))
-                        
-                        print(f"[Thread-{flow_type}] Đang ấn nút Lưu...")
-                        xpath_save = "//*[text()='Lưu' or text()='Save']/ancestor::div[@role='button'] | //*[text()='Lưu' or text()='Save']"
-                        save_edu = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_save)))
-                        for s_el in save_edu:
-                            click_hard(driver, s_el)
-                            time.sleep(0.5)
-                        
-                        print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Trường đại học!")
+                    print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Tỉnh/Thành phố hiện tại!")
             except Exception as e:
                 print(f"[Thread-{flow_type}] Lỗi khi tương tác trang cá nhân: {e}")
         else:
