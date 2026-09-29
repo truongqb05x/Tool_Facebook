@@ -17,17 +17,17 @@ def do_change_moiquanhe(driver, uid, flow_type="1"):
         return False
 
     try:
-        print(f"[Thread-{flow_type}] Truy cập vào tab Mối quan hệ của profile...")
+        #print(f"[Thread-{flow_type}] Truy cập vào tab Mối quan hệ của profile...")
         driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=about_family_and_relationships")
         time.sleep(5)
         
-        print(f"[Thread-{flow_type}] Kiểm tra xem tài khoản đã có Tình trạng mối quan hệ chưa...")
+        #print(f"[{uid}] Kiểm tra xem tài khoản đã có Tình trạng mối quan hệ chưa...")
         xpath_rel_filled = "//*[@aria-label='Chỉnh sửa mối quan hệ' or @aria-label='Edit relationship' or @aria-label='Edit Relationship']"
         if driver.find_elements(By.XPATH, xpath_rel_filled):
-            print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn Tình trạng mối quan hệ rồi!")
+            print(f"[{uid}] BỎ QUA: Tài khoản đã có sẵn Tình trạng mối quan hệ rồi!")
             return
             
-        print(f"[Thread-{flow_type}] Đang tìm nút 'Tình trạng mối quan hệ'...")
+        #print(f"[Thread-{flow_type}] Đang tìm nút 'Tình trạng mối quan hệ'...")
         xpath_rel_btn = "//*[contains(text(), 'Tình trạng mối quan hệ') or contains(text(), 'Relationship status')]"
         rel_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_rel_btn)))
         for el in rel_els:
@@ -51,7 +51,7 @@ def do_change_moiquanhe(driver, uid, flow_type="1"):
             click_hard(driver, s_el)
             time.sleep(0.5)
             
-        print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Mối quan hệ!")
+        print(f"[{uid}] Đổi thành công")
         time.sleep(3)
     except Exception as e:
-        print(f"[Thread-{flow_type}] Lỗi đổi thông tin Mối quan hệ: {e}")
+        print(f"[{uid}] Lỗi đổi thông tin Mối quan hệ: {e}")

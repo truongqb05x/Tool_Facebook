@@ -17,17 +17,17 @@ def do_change_thpt(driver, uid, flow_type="1"):
         return False
 
     try:
-        print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
+        #print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
         driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_education")
         time.sleep(5)
         
-        print(f"[Thread-{flow_type}] Kiểm tra xem đã có Trường THPT chưa...")
+        #print(f"[{uid}] Kiểm tra xem đã có Trường THPT chưa...")
         xpath_hs_filled = "//h2[.//span[text()='Trường trung học']] | //h2[.//span[text()='High School']]"
         if driver.find_elements(By.XPATH, xpath_hs_filled):
-            print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường THPT rồi!")
+            print(f"[{uid}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường THPT rồi!")
             return
             
-        print(f"[Thread-{flow_type}] Đang tìm nút 'Trường trung học phổ thông'...")
+        #print(f"[Thread-{flow_type}] Đang tìm nút 'Trường trung học phổ thông'...")
         xpath_hs_btn = "//*[contains(text(), 'Trường trung học phổ thông') or contains(text(), 'trung học phổ thông') or contains(text(), 'High school') or contains(text(), 'High School')]"
         hs_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_hs_btn)))
         for el in hs_els:
@@ -69,7 +69,7 @@ def do_change_thpt(driver, uid, flow_type="1"):
                 click_hard(driver, s_el)
                 time.sleep(0.5)
                 
-            print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Trường THPT!")
+            print(f"[{uid}] Đổi thành công")
             time.sleep(3)
     except Exception as e:
-        print(f"[Thread-{flow_type}] Lỗi đổi thông tin Trường THPT: {e}")
+        print(f"[{uid}] Lỗi đổi thông tin Trường THPT: {e}")

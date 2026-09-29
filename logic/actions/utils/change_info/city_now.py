@@ -17,16 +17,16 @@ def do_change_city_now(driver, uid, flow_type="1"):
         return False
 
     try:
-        print(f"[Thread-{flow_type}] Truy cập vào tab Nơi từng sống của profile...")
-        driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=about_places")
+        #print(f"[Thread-{flow_type}] Truy cập vào tab Nơi từng sống của profile...")
+        driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_personal_details")
         time.sleep(5)
         
         xpath_already_filled = "//*[@aria-label and (contains(@aria-label, 'Chỉnh sửa') or contains(@aria-label, 'chỉnh sửa') or contains(@aria-label, 'Edit') or contains(@aria-label, 'edit')) and (contains(@aria-label, 'tỉnh/thành phố') or contains(@aria-label, 'Tỉnh/thành phố') or contains(@aria-label, 'Tỉnh/Thành phố') or contains(@aria-label, 'current city') or contains(@aria-label, 'Current city'))]"
         if driver.find_elements(By.XPATH, xpath_already_filled):
-            print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Tỉnh/Thành phố hiện tại rồi!")
+            print(f"[{uid}] BỎ QUA: Tài khoản đã có sẵn thông tin Tỉnh/Thành phố hiện tại rồi!")
             return
             
-        print(f"[Thread-{flow_type}] Đang tìm nút Thêm 'Tỉnh/thành phố hiện tại'...")
+        #rint(f"[{uid}] Đang tìm nút Thêm 'Tỉnh/thành phố hiện tại'...")
         xpath_city = "//*[contains(text(), 'Tỉnh/thành phố') or contains(text(), 'tỉnh/thành phố') or contains(text(), 'Tỉnh/Thành phố') or contains(text(), 'Current city') or contains(text(), 'current city')]"
         city_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_city)))
         for el in city_els:
@@ -77,7 +77,7 @@ def do_change_city_now(driver, uid, flow_type="1"):
                     click_hard(driver, n_el)
             except: pass
             
-            print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Tỉnh/Thành phố hiện tại!")
+            print(f"[{uid}] Đổi thành công!")
             time.sleep(3)
     except Exception as e:
-        print(f"[Thread-{flow_type}] Lỗi đổi thông tin Thành phố: {e}")
+        print(f"[{uid}] Lỗi đổi thông tin Thành phố: {e}")

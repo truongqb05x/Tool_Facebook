@@ -135,9 +135,12 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             
             try:
                 success = join_single_group(driver, wait, uid, gid)
-                if success:
+                if success == "SKIP":
+                    idx += 1
+                    continue
+                elif success:
                     print(f"[{uid}] Đã join {gid}")
-                if not success:
+                else:
                     print(f"[{uid}] ⚠️ Lỗi khi tham gia {gid}, tiến hành thử lại...")
                     # Kiểm tra xem driver còn sống không
                     try:

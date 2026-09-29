@@ -457,7 +457,6 @@
                                 </MenuItem>
                                 <Separator/>
                                 <MenuItem Header="Vượt checkpoint"/>
-                                <MenuItem Header="Ngôn ngữ"/>
                                 <MenuItem Header="Get Token"/>
                                 <MenuItem Header="Khác"/>
                             </ContextMenu>

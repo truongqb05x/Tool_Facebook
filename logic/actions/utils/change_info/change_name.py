@@ -7,7 +7,7 @@ def do_change_change_name(driver, uid, flow_type="1"):
     wait_60 = WebDriverWait(driver, 60)
     
     try:
-        print(f"[Thread-{flow_type}] Truy cập trực tiếp trang đổi Tên của Account Center...")
+        #print(f"[Thread-{flow_type}] Truy cập trực tiếp trang đổi Tên của Account Center...")
         driver.get(f"https://accountscenter.facebook.com/profiles/{uid}/name")
         time.sleep(5)
         
@@ -15,7 +15,7 @@ def do_change_change_name(driver, uid, flow_type="1"):
         try:
             wait_3 = WebDriverWait(driver, 3)
             wait_3.until(EC.presence_of_element_located((By.XPATH, xpath_limit)))
-            print(f"[Thread-{flow_type}] LỖI: Tài khoản KHÔNG ĐỦ ĐIỀU KIỆN (Bị kẹt 60 ngày)! Bỏ qua.")
+            print(f"[{uid}] LỖI: Tài khoản KHÔNG ĐỦ ĐIỀU KIỆN (Bị kẹt 60 ngày)! Bỏ qua.")
             return
         except: pass
         
@@ -88,7 +88,7 @@ def do_change_change_name(driver, uid, flow_type="1"):
             return f"/profiles/{uid}" in curr and "/name" not in curr
             
         wait_60.until(is_done_redirected)
-        print(f"[Thread-{flow_type}] Chúc mừng! Đã đổi Tên hoàn tất và quay về trang Account Center thành công!")
+        print(f"[{uid}] Đổi tên thành công")
         
     except Exception as ex:
-        print(f"[Thread-{flow_type}] Lỗi khi đổi tên: {ex}")
+        print(f"[{uid}] Lỗi khi đổi tên: {ex}")

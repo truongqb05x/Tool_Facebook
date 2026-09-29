@@ -344,7 +344,7 @@ def join_single_group(driver, wait, uid, group_id):
         current_url = driver.current_url
         if f"facebook.com/{group_id}" in current_url and "/groups/" not in current_url:
             print(f"[{uid}] 🚫 Nhóm {group_id} bị chặn hoặc không khả dụng (URL: {current_url}). Bỏ qua ID này.")
-            return False
+            return "SKIP"
 
         # Kiểm tra trước xem đã join hoặc gửi yêu cầu chưa
         if _is_already_joined(driver):

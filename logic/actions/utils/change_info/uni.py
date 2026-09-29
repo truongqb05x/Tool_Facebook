@@ -17,17 +17,17 @@ def do_change_uni(driver, uid, flow_type="1"):
         return False
 
     try:
-        print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
+        #print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
         driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_education")
         time.sleep(5)
         
-        print(f"[Thread-{flow_type}] Kiểm tra xem đã có Trường cao đẳng/đại học chưa...")
+        #print(f"[{uid}] Kiểm tra xem đã có Trường cao đẳng/đại học chưa...")
         xpath_edu_filled = "//*[@aria-label='Chỉnh sửa trường cao đẳng/đại học' or @aria-label='Edit college' or @aria-label='Edit university']"
         if driver.find_elements(By.XPATH, xpath_edu_filled):
-            print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường đại học rồi!")
+            print(f"[{uid}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường đại học rồi!")
             return
             
-        print(f"[Thread-{flow_type}] Đang tìm nút 'Trường cao đẳng/đại học'...")
+        #print(f"[Thread-{flow_type}] Đang tìm nút 'Trường cao đẳng/đại học'...")
         xpath_edu_btn = "//*[contains(text(), 'Trường cao đẳng') or contains(text(), 'đại học') or contains(text(), 'College') or contains(text(), 'University')]"
         edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_edu_btn)))
         for el in edu_els:
@@ -69,7 +69,7 @@ def do_change_uni(driver, uid, flow_type="1"):
                 click_hard(driver, s_el)
                 time.sleep(0.5)
                 
-            print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Trường đại học!")
+            print(f"[{uid}] Đổi thành công")
             time.sleep(3)
     except Exception as e:
-        print(f"[Thread-{flow_type}] Lỗi đổi thông tin Trường ĐH: {e}")
+        print(f"[{uid}] Lỗi đổi thông tin Trường ĐH: {e}")

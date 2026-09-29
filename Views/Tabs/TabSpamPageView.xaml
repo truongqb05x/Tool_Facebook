@@ -180,7 +180,7 @@
                                     </Button>
 
                                     <!-- Nút Dừng -->
-                                    <Button Grid.Column="2" Command="{Binding StopTaskCommand}" Background="White" BorderBrush="#c82333" Foreground="#c82333" Cursor="Hand" BorderThickness="1" Height="36">
+                                    <Button Grid.Column="2" Click="BtnStop_Click" Background="White" BorderBrush="#c82333" Foreground="#c82333" Cursor="Hand" BorderThickness="1" Height="36">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
                                                 <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
@@ -206,9 +206,88 @@
                                     </ScrollViewer>
                                 </Border>
 
-                                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <TextBlock Text="Trạng thái: " FontWeight="SemiBold" Foreground="#555" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding StatusText}" FontWeight="Bold" Foreground="#ea4335" VerticalAlignment="Center"/>
+                                <!-- Trạng thái chạy -->
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
+                                    <!-- Đang chạy icon (spinner) -->
+                                    <Grid Width="22" Height="22" Margin="0,0,8,0" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                                        <Ellipse Stroke="#e0e0e0" StrokeThickness="2" Width="18" Height="18"/>
+                                        <Path Data="M 11,2 A 9,9 0 0 1 20,11" Stroke="#1a73e8" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" RenderTransformOrigin="0.5,0.5">
+                                            <Path.RenderTransform>
+                                                <RotateTransform Angle="0"/>
+                                            </Path.RenderTransform>
+                                            <Path.Triggers>
+                                                <EventTrigger RoutedEvent="Loaded">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="(Path.RenderTransform).(RotateTransform.Angle)" From="0" To="360" Duration="0:0:1" RepeatBehavior="Forever"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Path.Triggers>
+                                        </Path>
+                                    </Grid>
+                                    
+                                    <!-- Đã dừng icon (grey circle with minus) -->
+                                    <Border Width="22" Height="22" CornerRadius="11" Background="#f4f5f7" BorderBrush="#e0e0e0" BorderThickness="1.5" Margin="0,0,8,0">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding StatusText}" Value="Đã dừng">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Rectangle Width="8" Height="1.5" Fill="#666" RadiusX="0.5" RadiusY="0.5"/>
+                                    </Border>
+                                    
+                                    <!-- Đã kết thúc icon (grey circle with dot) -->
+                                    <Border Width="22" Height="22" CornerRadius="11" Background="#f4f5f7" BorderBrush="#e0e0e0" BorderThickness="1.5" Margin="0,0,8,0">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding StatusText}" Value="Đã kết thúc">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Ellipse Width="6" Height="6" Fill="#17509c"/>
+                                    </Border>
+
+                                    <!-- Pill text -->
+                                    <Border CornerRadius="15" Padding="15,6">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#f4f5f7"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding StatusText}" Value="Đang chạy">
+                                                        <Setter Property="Background" Value="#eef2fa"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding StatusText}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#666"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding StatusText}" Value="Đang chạy">
+                                                            <Setter Property="Foreground" Value="#1a73e8"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding StatusText}" Value="Đã kết thúc">
+                                                            <Setter Property="Foreground" Value="#17509c"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
                                 </StackPanel>
                             </Grid>
                         </Border>
