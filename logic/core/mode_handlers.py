@@ -384,7 +384,7 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         
         if is_up_avatar:
             print(f"[{uid}]  Tiến hành Upload Avatar...")
-            from utils.avatar_utils import upload_avatar_and_status
+            from actions.utils.avatar_utils import upload_avatar_and_status
             from config.config import AVATAR_FOLDER, AVATAR_STT_FILE
             
             avatar_folder = task_config.get("AvatarFolderPath", AVATAR_FOLDER) if task_config else AVATAR_FOLDER
