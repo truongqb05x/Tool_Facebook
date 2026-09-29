@@ -14,6 +14,21 @@ namespace FPlusClone.ViewModels
     {
         public ObservableCollection<TaskAccount> TaskAccounts { get; set; } = new ObservableCollection<TaskAccount>();
 
+        public int SelectedAccountsCount => TaskAccounts.Count(a => a.IsSelected);
+
+        public bool IsAllSelected
+        {
+            get => TaskAccounts.Count > 0 && TaskAccounts.All(a => a.IsSelected);
+            set
+            {
+                foreach (var acc in TaskAccounts)
+                {
+                    acc.IsSelected = value;
+                }
+                OnPropertyChanged();
+            }
+        }
+
         private bool _isRepeat;
         public bool IsRepeat
         {
@@ -53,6 +68,22 @@ namespace FPlusClone.ViewModels
 
         public BaseTabViewModel()
         {
+            TaskAccounts.CollectionChanged += (s, e) =>
+            {
+                if (e.NewItems != null)
+                {
+                    foreach (TaskAccount item in e.NewItems)
+                        item.PropertyChanged += Item_PropertyChanged;
+                }
+                if (e.OldItems != null)
+                {
+                    foreach (TaskAccount item in e.OldItems)
+                        item.PropertyChanged -= Item_PropertyChanged;
+                }
+                OnPropertyChanged(nameof(SelectedAccountsCount));
+                OnPropertyChanged(nameof(IsAllSelected));
+            };
+
             OpenSelectAccountCommand = new RelayCommand(_ => OpenSelectAccountModal());
             OpenActionConfigCommand = new RelayCommand(obj => OpenActionConfigModal(obj as string));
             RemoveAccountCommand = new RelayCommand(obj =>
@@ -71,6 +102,15 @@ namespace FPlusClone.ViewModels
                 bool allSelected = TaskAccounts.All(a => a.IsSelected);
                 foreach (var acc in TaskAccounts) acc.IsSelected = !allSelected;
             });
+        }
+
+        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(TaskAccount.IsSelected))
+            {
+                OnPropertyChanged(nameof(SelectedAccountsCount));
+                OnPropertyChanged(nameof(IsAllSelected));
+            }
         }
 
         private void OpenSelectAccountModal()
@@ -109,7 +149,7 @@ namespace FPlusClone.ViewModels
                                 ? "KiotProxy (no key)"
                                 : $"KiotProxy ({appSettings.KiotProxyKey.Substring(0, Math.Min(8, appSettings.KiotProxyKey.Length))}...)";    
                         }
-                        TaskAccounts.Add(new TaskAccount { Account = acc, Proxy = proxyLabel });
+                        TaskAccounts.Add(new TaskAccount { Account = acc, Proxy = proxyLabel, IsSelected = true });
                         existingCount++;
                     }
                 }

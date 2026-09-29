@@ -341,6 +341,11 @@ def join_single_group(driver, wait, uid, group_id):
         jitter = random.uniform(1.0, 3.5)
         time.sleep(jitter)
 
+        current_url = driver.current_url
+        if f"facebook.com/{group_id}" in current_url and "/groups/" not in current_url:
+            print(f"[{uid}] 🚫 Nhóm {group_id} bị chặn hoặc không khả dụng (URL: {current_url}). Bỏ qua ID này.")
+            return False
+
         # Kiểm tra trước xem đã join hoặc gửi yêu cầu chưa
         if _is_already_joined(driver):
             #print(f"[{uid}] ℹ️ Đã tham gia hoặc đã gửi yêu cầu nhóm {group_id} từ trước.")

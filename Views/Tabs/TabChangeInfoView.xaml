@@ -64,6 +64,13 @@
                             </Grid>
                         </StackPanel>
 
+                        <CheckBox Content="Thay đổi tên" IsChecked="{Binding IsChangeName}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Thay đổi thành phố hiện tại" IsChecked="{Binding IsChangeCityNow}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Thay đổi quê quán" IsChecked="{Binding IsChangeHometown}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Thay đổi trường THPT" IsChecked="{Binding IsChangeHighSchool}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Thay đổi trường đại học" IsChecked="{Binding IsChangeUniversity}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Thay đổi mối quan hệ" IsChecked="{Binding IsChangeRelationship}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
                         <Grid Margin="0,15,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>

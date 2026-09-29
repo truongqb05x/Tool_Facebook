@@ -9,7 +9,7 @@ namespace FPlusClone.ViewModels
 {
     public class TabChangeInfoViewModel : BaseTabViewModel
     {
-        private bool _isUpAvatar = true;
+        private bool _isUpAvatar = false;
         public bool IsUpAvatar
         {
             get => _isUpAvatar;
@@ -21,6 +21,48 @@ namespace FPlusClone.ViewModels
         {
             get => _isSkipIfHasAvatar;
             set { if (_isSkipIfHasAvatar != value) { _isSkipIfHasAvatar = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isChangeName = false;
+        public bool IsChangeName
+        {
+            get => _isChangeName;
+            set { if (_isChangeName != value) { _isChangeName = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isChangeCityNow = false;
+        public bool IsChangeCityNow
+        {
+            get => _isChangeCityNow;
+            set { if (_isChangeCityNow != value) { _isChangeCityNow = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isChangeHometown = false;
+        public bool IsChangeHometown
+        {
+            get => _isChangeHometown;
+            set { if (_isChangeHometown != value) { _isChangeHometown = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isChangeHighSchool = false;
+        public bool IsChangeHighSchool
+        {
+            get => _isChangeHighSchool;
+            set { if (_isChangeHighSchool != value) { _isChangeHighSchool = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isChangeUniversity = false;
+        public bool IsChangeUniversity
+        {
+            get => _isChangeUniversity;
+            set { if (_isChangeUniversity != value) { _isChangeUniversity = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isChangeRelationship = false;
+        public bool IsChangeRelationship
+        {
+            get => _isChangeRelationship;
+            set { if (_isChangeRelationship != value) { _isChangeRelationship = value; OnPropertyChanged(); } }
         }
 
         private string _avatarFolderPath = "";
@@ -101,7 +143,8 @@ namespace FPlusClone.ViewModels
         {
             if (IsRunning) return;
 
-            if (TaskAccounts.Count == 0)
+            var selectedTaskAccounts = TaskAccounts.Where(t => t.IsSelected).ToList();
+            if (selectedTaskAccounts.Count == 0)
             {
                 System.Windows.MessageBox.Show("Vui lòng chọn ít nhất một tài khoản!", "Thông báo", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
                 return;
@@ -113,7 +156,7 @@ namespace FPlusClone.ViewModels
                 return;
             }
 
-            var accountLines = TaskAccounts.Select(t => 
+            var accountLines = selectedTaskAccounts.Select(t => 
                 $"{t.Account.Uid}|{t.Account.Password}|{t.Account.TwoFA}|{t.Account.Cookie}|{t.Account.Token}"
             ).ToList();
 
@@ -133,6 +176,12 @@ namespace FPlusClone.ViewModels
                 IsUpAvatar = IsUpAvatar,
                 IsSkipIfHasAvatar = IsSkipIfHasAvatar,
                 AvatarFolderPath = AvatarFolderPath,
+                IsChangeName = IsChangeName,
+                IsChangeCityNow = IsChangeCityNow,
+                IsChangeHometown = IsChangeHometown,
+                IsChangeHighSchool = IsChangeHighSchool,
+                IsChangeUniversity = IsChangeUniversity,
+                IsChangeRelationship = IsChangeRelationship,
                 SelectedAccountsInfo = accountLines,
                 ProxyMethod = appSettings.ProxyMethod,
                 ProxyList = proxyLines,

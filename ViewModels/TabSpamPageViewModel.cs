@@ -149,13 +149,14 @@ namespace FPlusClone.ViewModels
                 return;
             }
 
-            if (TaskAccounts.Count == 0)
+            var selectedTaskAccounts = TaskAccounts.Where(t => t.IsSelected).ToList();
+            if (selectedTaskAccounts.Count == 0)
             {
                 System.Windows.MessageBox.Show("Vui lòng chọn ít nhất một tài khoản!", "Thông báo", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
                 return;
             }
 
-            var accountLines = TaskAccounts.Select(t => 
+            var accountLines = selectedTaskAccounts.Select(t => 
                 $"{t.Account.Uid}|{t.Account.Password}|{t.Account.TwoFA}|{t.Account.Cookie}|{t.Account.Token}"
             ).ToList();
 

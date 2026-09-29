@@ -227,7 +227,13 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                     a.click();
                 """
                 driver.execute_script(script_target)
+                time.sleep(4)
         
+        current_url = driver.current_url
+        if f"facebook.com/{g_id}" in current_url and "/groups/" not in current_url:
+            print(f"[{uid}] 🚫 Nhóm {g_id} bị chặn hoặc không khả dụng (URL: {current_url}). Bỏ qua ID này.")
+            return False
+
         # Đợi modal (nếu có) xuất hiện, thử nhiều lần trong 8 giây
         modal_closed = False
         for _ in range(4): # Thử 4 lần, mỗi lần chờ 2 giây

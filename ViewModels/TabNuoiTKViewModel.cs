@@ -169,14 +169,15 @@ namespace FPlusClone.ViewModels
         {
             if (IsRunning) return;
 
-            var selectedUids = TaskAccounts.Select(t => t.Account.Uid).ToList();
+            var selectedTaskAccounts = TaskAccounts.Where(t => t.IsSelected).ToList();
+            var selectedUids = selectedTaskAccounts.Select(t => t.Account.Uid).ToList();
             if (selectedUids.Count == 0)
             {
                 System.Windows.MessageBox.Show("Vui lòng chọn ít nhất 1 tài khoản để chạy.");
                 return;
             }
 
-            var accountLines = TaskAccounts.Select(t => 
+            var accountLines = selectedTaskAccounts.Select(t => 
                 $"{t.Account.Uid}|{t.Account.Password}|{t.Account.TwoFA}|{t.Account.Cookie}|{t.Account.Token}"
             ).ToList();
 
@@ -226,7 +227,7 @@ namespace FPlusClone.ViewModels
             
             string jsonConfig = System.Text.Json.JsonSerializer.Serialize(fullConfig);
             
-            foreach (var acc in TaskAccounts)
+            foreach (var acc in selectedTaskAccounts)
             {
                 acc.Progress = "Đang chạy...";
             }

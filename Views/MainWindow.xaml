@@ -327,12 +327,8 @@
 
                         <DataGrid.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="Check Live"/>
-                                <MenuItem Header="Check Live &amp; info"/>
-                                <MenuItem Header="Check Live Info &amp; Login"/>
-                                <MenuItem Header="Check..."/>
+                                <MenuItem Header="Check &amp; info"/>
                                 <Separator/>
-                                <MenuItem Header="Chạy tính năng"/>
                                 <MenuItem Header="View in Chrome" Command="{Binding ViewInChromeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=ContextMenu}, Path=PlacementTarget.SelectedItems}"/>
                                 <MenuItem Header="Login with User|Pass"/>
                                 <MenuItem Header="Copy">
@@ -454,8 +450,6 @@
                                         </MenuItem.CommandParameter>
                                     </MenuItem>
                                 </MenuItem>
-
-                                <MenuItem Header="Move To"/>
                                 <MenuItem Header="Xóa">
                                     <MenuItem Header="Xóa dòng chọn" Command="{Binding DeleteSelectedAccountsCommand}" 
                                               CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=ContextMenu}, Path=PlacementTarget.SelectedItems}"/>
@@ -463,9 +457,6 @@
                                 </MenuItem>
                                 <Separator/>
                                 <MenuItem Header="Vượt checkpoint"/>
-                                <MenuItem Header="Backup Checkpoint"/>
-                                <MenuItem Header="Hotmail"/>
-                                <MenuItem Header="2FA"/>
                                 <MenuItem Header="Ngôn ngữ"/>
                                 <MenuItem Header="Get Token"/>
                                 <MenuItem Header="Khác"/>

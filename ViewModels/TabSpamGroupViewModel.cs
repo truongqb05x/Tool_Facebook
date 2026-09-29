@@ -402,14 +402,15 @@ namespace FPlusClone.ViewModels
             if (IsRunning) return;
             SaveUIConfig();
 
-            var selectedUids = TaskAccounts.Select(t => t.Account.Uid).ToList();
-            if (selectedUids.Count == 0)
+            var selectedTaskAccounts = TaskAccounts.Where(t => t.IsSelected).ToList();
+            if (selectedTaskAccounts.Count == 0)
             {
                 System.Windows.MessageBox.Show("Vui lòng chọn ít nhất 1 tài khoản để chạy.");
                 return;
             }
 
-            var accountLines = TaskAccounts.Select(t => 
+            var selectedUids = selectedTaskAccounts.Select(t => t.Account.Uid).ToList();
+            var accountLines = selectedTaskAccounts.Select(t => 
                 $"{t.Account.Uid}|{t.Account.Password}|{t.Account.TwoFA}|{t.Account.Cookie}|{t.Account.Token}"
             ).ToList();
 
@@ -466,7 +467,7 @@ namespace FPlusClone.ViewModels
             string jsonConfig = System.Text.Json.JsonSerializer.Serialize(fullConfig);
             System.IO.File.WriteAllText("spam_group_config.json", jsonConfig);
 
-            foreach (var acc in TaskAccounts)
+            foreach (var acc in selectedTaskAccounts)
             {
                 acc.Progress = $"0/{MaxComments}";
             }

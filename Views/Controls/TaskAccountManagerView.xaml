@@ -38,7 +38,7 @@
                 <DataGridTemplateColumn Width="30">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
-                            <CheckBox Command="{Binding DataContext.SelectAllCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                            <CheckBox IsChecked="{Binding DataContext.IsAllSelected, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
                                       ToolTip="Chọn/bỏ tất cả"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.HeaderTemplate>
@@ -81,7 +81,9 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock FontSize="11" Foreground="#888" VerticalAlignment="Center">
-                <Run Text="Tổng: "/>
+                <Run Text="Đã chọn: "/>
+                <Run Text="{Binding SelectedAccountsCount, Mode=OneWay}" FontWeight="Bold" Foreground="#1a73e8"/>
+                <Run Text="/"/>
                 <Run Text="{Binding TaskAccounts.Count, Mode=OneWay}" FontWeight="Bold" Foreground="#1a73e8"/>
                 <Run Text=" tài khoản | Chuột phải để xóa"/>
             </TextBlock>

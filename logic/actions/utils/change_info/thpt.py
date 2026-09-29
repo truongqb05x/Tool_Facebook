@@ -140,14 +140,9 @@ def run_account_flow(cookie_line, window_index):
         if login_verified:
             print(f"[Thread-{flow_type}] Xác minh login thành công.")
             try:
-                print(f"[Thread-{flow_type}] Truy cập vào tab Chi tiết cá nhân của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_personal_details")
                 from selenium.webdriver.support.ui import WebDriverWait
                 from selenium.webdriver.support import expected_conditions as EC
                 wait_60 = WebDriverWait(driver, 60)
-                
-                print(f"[Thread-{flow_type}] Đang chờ trang tải...")
-                time.sleep(5)
                 
                 def click_hard(drv, element):
                     from selenium.webdriver.common.action_chains import ActionChains
@@ -208,6 +203,13 @@ def run_account_flow(cookie_line, window_index):
                     if active_hs:
                         print(f"[Thread-{flow_type}] Đang nhập tên trường THPT...")
                         target_hs = "Quảng Bình"
+                        try:
+                            with open("resources/danhsachthanhpho.txt", "r", encoding="utf-8") as f:
+                                lines = [line.strip() for line in f if line.strip()]
+                                if lines:
+                                    target_hs = random.choice(lines)
+                        except Exception as e:
+                            print(f"[Thread-{flow_type}] Lỗi đọc file danh sách thành phố: {e}")
                         for char in target_hs:
                             try: active_hs.send_keys(char)
                             except: pass

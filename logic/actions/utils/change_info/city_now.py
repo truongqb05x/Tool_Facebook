@@ -203,6 +203,13 @@ def run_account_flow(cookie_line, window_index):
                 if active_input:
                     print(f"[Thread-{flow_type}] Đang nhập chữ vào ô tìm kiếm...")
                     target_city = "Quảng Bình"
+                    try:
+                        with open("resources/danhsachthanhpho.txt", "r", encoding="utf-8") as f:
+                            lines = [line.strip() for line in f if line.strip()]
+                            if lines:
+                                target_city = random.choice(lines)
+                    except Exception as e:
+                        print(f"[Thread-{flow_type}] Lỗi đọc file danh sách thành phố: {e}")
                     for char in target_city:
                         try: active_input.send_keys(char)
                         except: pass
