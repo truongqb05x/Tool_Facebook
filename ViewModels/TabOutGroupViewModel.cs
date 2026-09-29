@@ -208,7 +208,13 @@ namespace FPlusClone.ViewModels
                     {
                         System.Windows.Application.Current.Dispatcher.Invoke(() => 
                         {
+                            if (e.Data.Trim() == "UI_CLEAR_LOG")
+                            {
+                                LogText = "";
+                                return;
+                            }
                             LogText += e.Data + "\n";
+                            if (LogText.Length > 10000) LogText = LogText.Substring(LogText.Length - 5000);
                             var matchDie = System.Text.RegularExpressions.Regex.Match(e.Data, @"\[(.*?)\]\s*UI_STATUS\|Die");
                             if (matchDie.Success)
                             {
@@ -227,6 +233,7 @@ namespace FPlusClone.ViewModels
                         System.Windows.Application.Current.Dispatcher.Invoke(() => 
                         {
                             LogText += "[ERROR] " + e.Data + "\n";
+                            if (LogText.Length > 10000) LogText = LogText.Substring(LogText.Length - 5000);
                         });
                     }
                 };

@@ -171,6 +171,8 @@ def run_cli():
                         for f in futures:
                             f.result()
                     batch_id += 1
+                    if batch_id > 0 and batch_id % 5 == 0:
+                        print("UI_CLEAR_LOG")
                 
                 print(f" Đã chạy xong 1 vòng ({len(current_cookies)} tài khoản). Nghỉ 3600s trước khi lặp lại từ đầu...")
                 time.sleep(3600)
@@ -209,9 +211,18 @@ def run_cli():
                     for idx, cookie in enumerate(batch):
                         slot_index = idx % max_threads
                         futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=5, group_join_list=group_join_list, cycle_count=proxy_turn, task_config=task_config))
+                        
+                        if task_config:
+                            delay_min = task_config.get("DelayAccountMin", 0)
+                            delay_max = task_config.get("DelayAccountMax", 0)
+                            if delay_max > 0 and idx < len(batch) - 1:
+                                delay_s = random.randint(delay_min, delay_max)
+                                time.sleep(delay_s)
                     for f in futures:
                         f.result()
                 batch_id += 1
+                if batch_id > 0 and batch_id % 5 == 0:
+                    print("UI_CLEAR_LOG")
             
             print(f" HOÀN THÀNH.")
             sys.exit(0)
@@ -268,6 +279,8 @@ def run_cli():
                     
                     accounts_processed += len(batch)
                     batch_id += 1
+                    if batch_id > 0 and batch_id % 5 == 0:
+                        print("UI_CLEAR_LOG")
 
                     # Kiểm tra Reset DCOM sau mỗi đợt (chỉ KiotProxy)
                     if is_reset_dcom and proxy_method == 2 and reset_dcom_after > 0:
@@ -319,6 +332,8 @@ def run_cli():
                         else:
                             fail_count += 1
                 batch_id += 1
+                if batch_id > 0 and batch_id % 5 == 0:
+                    print("UI_CLEAR_LOG")
             
             print("\n" + "="*50)
             print(" HOÀN THÀNH CHẾ ĐỘ CREATE PROFILE & CHECK LIVE")
@@ -387,6 +402,8 @@ def run_cli():
                     for f in futures:
                         f.result()
                 batch_id += 1
+                if batch_id > 0 and batch_id % 5 == 0:
+                    print("UI_CLEAR_LOG")
             
             print(f" Đã đóng tất cả các Profile của Mode 6.")
             sys.exit(0)
@@ -442,6 +459,8 @@ def run_cli():
                     for f in futures:
                         f.result()
                 batch_id += 1
+                if batch_id > 0 and batch_id % 5 == 0:
+                    print("UI_CLEAR_LOG")
             
             print(f" Đã chạy xong toàn bộ danh sách. Dừng chương trình.")
             sys.exit(0)
@@ -520,6 +539,8 @@ def run_cli():
                     for f in futures:
                         f.result()
                 batch_id += 1
+                if batch_id > 0 and batch_id % 5 == 0:
+                    print("UI_CLEAR_LOG")
 
             print(f" Đã chạy xong toàn bộ danh sách. Dừng chương trình.")
             sys.exit(0)
@@ -574,6 +595,8 @@ def run_cli():
                         for f in futures:
                             f.result()
                     batch_id += 1
+                if batch_id > 0 and batch_id % 5 == 0:
+                    print("UI_CLEAR_LOG")
                 
                 print(f" Đã chạy xong 1 vòng. Nghỉ 60s trước khi bắt đầu vòng lặp mới...")
                 time.sleep(60)
@@ -629,6 +652,8 @@ def run_cli():
                                 failed_cookies.append(cookie)
                                 
                     batch_id += 1
+                if batch_id > 0 and batch_id % 5 == 0:
+                    print("UI_CLEAR_LOG")
                 
                 cookies_to_process = failed_cookies
                 current_retry += 1
@@ -702,6 +727,8 @@ def run_cli():
                     
                     accounts_processed += len(batch)
                     batch_id += 1
+                    if batch_id > 0 and batch_id % 5 == 0:
+                        print("UI_CLEAR_LOG")
 
                     # Kiểm tra Reset DCOM sau mỗi đợt (chỉ KiotProxy)
                     if is_reset_dcom and proxy_method == 2 and reset_dcom_after > 0:
