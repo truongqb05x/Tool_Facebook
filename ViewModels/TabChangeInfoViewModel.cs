@@ -79,6 +79,20 @@ namespace FPlusClone.ViewModels
             set { if (_maxThreads != value) { _maxThreads = value; OnPropertyChanged(); } }
         }
 
+        private bool _isResetDcom;
+        public bool IsResetDcom
+        {
+            get => _isResetDcom;
+            set { if (_isResetDcom != value) { _isResetDcom = value; OnPropertyChanged(); } }
+        }
+
+        private int _resetDcomAfter = 5;
+        public int ResetDcomAfter
+        {
+            get => _resetDcomAfter;
+            set { if (_resetDcomAfter != value) { _resetDcomAfter = value; OnPropertyChanged(); } }
+        }
+
         public ICommand StartTaskCommand { get; }
         public ICommand StopTaskCommand { get; }
         public ICommand SelectAvatarFolderCommand { get; }
@@ -183,6 +197,8 @@ namespace FPlusClone.ViewModels
                 IsChangeUniversity = IsChangeUniversity,
                 IsChangeRelationship = IsChangeRelationship,
                 SelectedAccountsInfo = accountLines,
+                IsResetDcom = IsResetDcom,
+                ResetDcomAfter = ResetDcomAfter,
                 ProxyMethod = appSettings.ProxyMethod,
                 ProxyList = proxyLines,
                 KiotProxyKey = appSettings.KiotProxyKey ?? "",

@@ -83,6 +83,23 @@
                                 <TextBox Text="{Binding MaxThreads}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
                             </Border>
                         </Grid>
+
+                        <Grid Margin="0,15,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Reset DCOM lấy IP mới" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Text="Sau n lần (chỉ KiotProxy)" FontSize="11" Foreground="#888"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding IsResetDcom}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="50">
+                                    <TextBox Text="{Binding ResetDcomAfter}" IsEnabled="{Binding IsResetDcom}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
 
                     <Grid Grid.Column="2">
