@@ -1,14 +1,19 @@
-<UserControl x:Class="FPlusClone.Views.Tabs.TabSpamKeywordView"
+<UserControl x:Class="FPlusClone.Views.Tabs.TabChangeInfoView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:FPlusClone.Views.Controls"
              xmlns:vm="clr-namespace:FPlusClone.ViewModels"
              Background="#f0f0f0">
     <UserControl.DataContext>
-        <vm:TabSpamKeywordViewModel/>
+        <vm:TabChangeInfoViewModel/>
     </UserControl.DataContext>
     <UserControl.Resources>
-        <ResourceDictionary Source="/Resources/Styles.xaml"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </ResourceDictionary>
     </UserControl.Resources>
     
     <Grid Margin="10">
@@ -31,7 +36,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="CẤU HÌNH SPAM KEYWORD" FontSize="14" FontWeight="Bold" Foreground="#333" Margin="0,0,0,15"/>
+                <TextBlock Grid.Row="0" Text="CẤU HÌNH THAY ĐỔI THÔNG TIN" FontSize="14" FontWeight="Bold" Foreground="#333" Margin="0,0,0,15"/>
 
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
@@ -41,49 +46,23 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Nội dung comment (mỗi dòng 1 nội dung)" FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,6"/>
-                        <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc">
-                            <TextBox Text="{Binding CommentsText}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" Padding="8" BorderThickness="0" Background="Transparent"/>
-                        </Border>
-
-                        <TextBlock Text="Danh sách Từ khóa (Keyword)" FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,15,0,6"/>
-                        <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc">
-                            <TextBox Text="{Binding KeywordList}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" Padding="8" BorderThickness="0" FontFamily="Consolas" Background="Transparent"/>
-                        </Border>
+                        <CheckBox Content="Thay đổi ảnh đại diện (Up Avatar)" IsChecked="{Binding IsUpAvatar}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        
+                        <StackPanel Visibility="{Binding IsUpAvatar, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Thư mục chứa ảnh Avatar" FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc">
+                                    <TextBox Text="{Binding AvatarFolderPath}" Padding="5" BorderThickness="0" Background="Transparent" Height="28" IsReadOnly="True"/>
+                                </Border>
+                                <Button Grid.Column="1" Content="Chọn thư mục" Command="{Binding SelectAvatarFolderCommand}" Background="#1a73e8" Foreground="White" BorderThickness="0" Padding="10,0" Margin="5,0,0,0" Cursor="Hand" Height="28"/>
+                            </Grid>
+                        </StackPanel>
 
                         <Grid Margin="0,15,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="80"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Giới hạn comment / tài khoản" FontSize="12" FontWeight="SemiBold"/>
-                            </StackPanel>
-                            <Border Grid.Column="1" BorderBrush="#dadce0" BorderThickness="1" Background="White">
-                                <TextBox Text="{Binding MaxCommentsPerAcc}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
-                            </Border>
-                        </Grid>
-                        
-                        <Grid Margin="0,10,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Nghỉ giữa comment (giây)" FontSize="12" FontWeight="SemiBold"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
-                                    <TextBox Text="{Binding DelayMin}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="-" VerticalAlignment="Center" Margin="5,0"/>
-                                <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
-                                    <TextBox Text="{Binding DelayMax}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-
-                        <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="80"/>
@@ -94,21 +73,6 @@
                             <Border Grid.Column="1" BorderBrush="#dadce0" BorderThickness="1" Background="White">
                                 <TextBox Text="{Binding MaxThreads}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center"/>
                             </Border>
-                        </Grid>
-
-                        <Grid Margin="0,10,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Sửa comment sau đăng" FontSize="12" FontWeight="SemiBold"/>
-                            </StackPanel>
-                            <CheckBox Grid.Column="1" IsChecked="{Binding EditAfterPost}" VerticalAlignment="Center">
-                                <CheckBox.LayoutTransform>
-                                    <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
-                                </CheckBox.LayoutTransform>
-                            </CheckBox>
                         </Grid>
                     </StackPanel>
 

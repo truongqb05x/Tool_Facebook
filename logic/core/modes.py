@@ -133,15 +133,26 @@ def run_cli():
         if choice == "4":
             # MODE 4: SPAM COMMENT KEYWORD
             print(f" BẮT ĐẦU CHẾ ĐỘ 4: Spam Comment Keyword ({max_threads} luồng)")
-            keyword_list = read_file(getattr(config, "KEYWORD_FILE", "resources/keyword.txt"))
+            
+            keyword_list = []
+            if task_config and task_config.get("KeywordList"):
+                keyword_list = task_config.get("KeywordList")
+                print(f" Đã nhận {len(keyword_list)} từ khóa từ UI.")
+            else:
+                keyword_list = read_file(getattr(config, "KEYWORD_FILE", "resources/keyword.txt"))
+                
             if not keyword_list:
-                print(" Không tìm thấy file keyword hoặc file trống.")
+                print(" Không tìm thấy từ khóa hoặc danh sách trống.")
                 sys.exit(1)
             
             cycle_count = 1
             while True:
                 #print(f"\n BẮT ĐẦU VÒNG LẶP DANH SÁCH THỨ {cycle_count}")
-                current_cookies = read_file(config.COOKIE_FILE)
+                if task_config and task_config.get("SelectedAccountsInfo"):
+                    current_cookies = task_config.get("SelectedAccountsInfo")
+                else:
+                    current_cookies = read_file(config.COOKIE_FILE)
+                    
                 if not current_cookies:
                     print(" Danh sách tài khoản trống. Thử lại sau 30s...")
                     time.sleep(30)
@@ -156,7 +167,7 @@ def run_cli():
                         futures = []
                         for idx, cookie in enumerate(batch):
                             slot_index = idx % max_threads
-                            futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=4, keyword_list=keyword_list, cycle_count=proxy_turn))
+                            futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=4, keyword_list=keyword_list, cycle_count=proxy_turn, task_config=task_config))
                         for f in futures:
                             f.result()
                     batch_id += 1
@@ -444,43 +455,45 @@ def run_cli():
             print(" Mỗi dòng 1 ID hoặc username page.")
             print("-"*40)
 
-            # Chọn kiểu comment
-            print("\n Chọn kiểu comment:")
-            print("  1. Comment bằng TXT (nội dung từ edit_stt.txt)")
-            print("  2. Comment bằng ẢNH (từ thư mục resources/images/)")
-            try:
-                cm_choice = input("👉 Nhập lựa chọn (1/2): ").strip()
-            except:
-                cm_choice = "1"
-
-            page_comment_mode = "image" if cm_choice == "2" else "text"
-            print(f" Kiểu comment: {'ẢNH' if page_comment_mode == 'image' else 'TXT (edit_stt.txt)'}")
-
-            # Đọc danh sách page
-            pages_file = getattr(config, "PAGES_FILE", "resources/id_pages.txt")
-            page_list = read_file(pages_file)
-            if not page_list:
-                print(f" Không tìm thấy file {pages_file} hoặc file trống.")
-                print(f" Hãy thêm ID/username page vào file {pages_file} (mỗi dòng 1 cái).")
-                sys.exit(1)
-
-            print(f" Tìm thấy {len(page_list)} page trong danh sách.")
-
-            # Hỏi có xóa page ID khỏi file sau khi comment thành công không
-            print("\n Tự động xóa page ID khỏi file sau khi comment thành công?")
-            print("  y. CÓ — xóa page đã làm xong (mặc định)")
-            print("  n. KHÔNG — giữ nguyên file, chỉ comment")
-            try:
-                del_choice = input("👉 Nhập lựa chọn (y/n): ").strip().lower()
-            except:
-                del_choice = "y"
-            delete_page_after_comment = (del_choice != "n")
-            print(f" Chế độ xóa sau comment: {'CÓ' if delete_page_after_comment else 'KHÔNG'}")
-
-            current_cookies = read_file(config.COOKIE_FILE)
-            if not current_cookies:
-                print(" Danh sách tài khoản trống.")
-                sys.exit(0)
+            if task_config:
+                page_comment_mode = task_config.get("PageCommentMode", "text")
+                page_list = task_config.get("PageList", [])
+                delete_page_after_comment = task_config.get("IsDeleteAfterComment", True)
+                current_cookies = task_config.get("SelectedAccountsInfo", [])
+            else:
+                print("\n Chọn kiểu comment:")
+                print("  1. Comment bằng TXT (nội dung từ edit_stt.txt)")
+                print("  2. Comment bằng ẢNH (từ thư mục resources/images/)")
+                try:
+                    cm_choice = input("👉 Nhập lựa chọn (1/2): ").strip()
+                except:
+                    cm_choice = "1"
+    
+                page_comment_mode = "image" if cm_choice == "2" else "text"
+                print(f" Kiểu comment: {'ẢNH' if page_comment_mode == 'image' else 'TXT (edit_stt.txt)'}")
+    
+                pages_file = getattr(config, "PAGES_FILE", "resources/id_pages.txt")
+                page_list = read_file(pages_file)
+                if not page_list:
+                    print(f" Không tìm thấy file {pages_file} hoặc file trống.")
+                    sys.exit(1)
+    
+                print(f" Tìm thấy {len(page_list)} page trong danh sách.")
+    
+                print("\n Tự động xóa page ID khỏi file sau khi comment thành công?")
+                print("  y. CÓ — xóa page đã làm xong (mặc định)")
+                print("  n. KHÔNG — giữ nguyên file, chỉ comment")
+                try:
+                    del_choice = input("👉 Nhập lựa chọn (y/n): ").strip().lower()
+                except:
+                    del_choice = "y"
+                delete_page_after_comment = (del_choice != "n")
+                print(f" Chế độ xóa sau comment: {'CÓ' if delete_page_after_comment else 'KHÔNG'}")
+    
+                current_cookies = read_file(config.COOKIE_FILE)
+                if not current_cookies:
+                    print(" Danh sách tài khoản trống.")
+                    sys.exit(0)
 
             print(f" BẮT ĐẦU CHẾ ĐỘ 8: Comment ID Page ({max_threads} luồng)")
 
@@ -501,7 +514,8 @@ def run_cli():
                             page_list=list(page_list),
                             page_comment_mode=page_comment_mode,
                             delete_page_after_comment=delete_page_after_comment,
-                            cycle_count=proxy_turn
+                            cycle_count=proxy_turn,
+                            task_config=task_config
                         ))
                     for f in futures:
                         f.result()
@@ -568,7 +582,12 @@ def run_cli():
         elif choice == "10":
             # MODE 10: UPLOAD AVATAR
             print(f" BẮT ĐẦU CHẾ ĐỘ 10: Upload Avatar ({max_threads} luồng)")
-            current_cookies = read_file(config.COOKIE_FILE)
+            
+            if task_config:
+                current_cookies = task_config.get("SelectedAccountsInfo", [])
+            else:
+                current_cookies = read_file(config.COOKIE_FILE)
+            
             if not current_cookies:
                 print(" Danh sách tài khoản trống.")
                 sys.exit(0)
@@ -596,7 +615,7 @@ def run_cli():
                         future_to_cookie = {}
                         for idx, cookie in enumerate(batch):
                             slot_index = idx % max_threads
-                            f = executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=10, cycle_count=proxy_turn)
+                            f = executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=10, cycle_count=proxy_turn, task_config=task_config)
                             future_to_cookie[f] = cookie
                         
                         for f in future_to_cookie:

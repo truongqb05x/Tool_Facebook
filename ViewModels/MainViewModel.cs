@@ -193,7 +193,8 @@ namespace FPlusClone.ViewModels
                 new TabViewModel { Header = "Rời nhóm" },
                 new TabViewModel { Header = "Nuôi tài khoản" },
                 new TabViewModel { Header = "Spam Keyword" },
-                new TabViewModel { Header = "Comment Page" }
+                new TabViewModel { Header = "Comment Page" },
+                new TabViewModel { Header = "Change Info" }
             };
 
             Statuses = new ObservableCollection<string> { "All Status", "Live", "Confirm Email", "Checkpoint" };

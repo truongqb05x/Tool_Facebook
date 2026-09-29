@@ -267,6 +267,11 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             if result is True:
                 success_count += 1
                 print(f"[{uid}]  Comment thành công page: {page_id}")
+                
+                # Check max_comments
+                if success_count >= max_comments:
+                    print(f"[{uid}]  Đã đạt giới hạn {max_comments} comment. Dừng chuyển page.")
+                    
                 # Xóa page đã xong khỏi file id_pages.txt (nếu được bật)
                 if delete_page_after_comment:
                     with FILE_LOCK:
@@ -286,7 +291,12 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             else:
                 print(f"[{uid}]  Không comment được page: {page_id}. Thử page tiếp theo.")
 
-            delay = random.randint(10, 20)
+            if success_count >= max_comments:
+                break
+
+            delay_min = task_config.get("DelayAccountMin", 10) if task_config else 10
+            delay_max = task_config.get("DelayAccountMax", 20) if task_config else 20
+            delay = random.randint(delay_min, delay_max)
             print(f"[{uid}]  Nghỉ {delay}s trước khi chuyển sang page tiếp theo...")
             time.sleep(delay)
 
@@ -367,14 +377,26 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         return True
 
     if execution_mode == 10:
-        print(f"[{uid}]  MODE 10: Upload Avatar...")
-        from actions.avatar_utils import upload_avatar_and_status
-        from config.config import AVATAR_FOLDER, AVATAR_STT_FILE
-        result = upload_avatar_and_status(driver, wait, AVATAR_FOLDER, AVATAR_STT_FILE)
-        if result:
-            print(f"[{uid}]  MODE 10: Upload avatar thành công.")
+        print(f"[{uid}]  MODE 10: Thay đổi thông tin...")
+        
+        is_up_avatar = task_config.get("IsUpAvatar", True) if task_config else True
+        result = True
+        
+        if is_up_avatar:
+            print(f"[{uid}]  Tiến hành Upload Avatar...")
+            from utils.avatar_utils import upload_avatar_and_status
+            from config.config import AVATAR_FOLDER, AVATAR_STT_FILE
+            
+            avatar_folder = task_config.get("AvatarFolderPath", AVATAR_FOLDER) if task_config else AVATAR_FOLDER
+            
+            result = upload_avatar_and_status(driver, wait, avatar_folder, AVATAR_STT_FILE)
+            if result:
+                print(f"[{uid}]  MODE 10: Upload avatar thành công.")
+            else:
+                print(f"[{uid}]  MODE 10: Upload avatar thất bại.")
         else:
-            print(f"[{uid}]  MODE 10: Upload avatar thất bại.")
+            print(f"[{uid}]  Không chọn Upload Avatar, bỏ qua bước này.")
+            
         return result
 
     if execution_mode == 6:
