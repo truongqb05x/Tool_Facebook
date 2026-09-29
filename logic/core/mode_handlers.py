@@ -381,7 +381,7 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
     if execution_mode == 10:
         print(f"[{uid}]  MODE 10: Thay đổi thông tin...")
         
-        is_up_avatar = task_config.get("IsUpAvatar", True) if task_config else True
+        is_up_avatar = task_config.get("IsUpAvatar", False) if task_config else False
         result = True
         
         if is_up_avatar:
@@ -397,8 +397,30 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                 print(f"[{uid}]  MODE 10: Xử lý avatar thành công.")
             else:
                 print(f"[{uid}]  MODE 10: Xử lý avatar thất bại hoặc bị bỏ qua.")
-        else:
-            print(f"[{uid}]  Không chọn Upload Avatar, bỏ qua bước này.")
+        
+        if task_config.get("IsChangeName", False):
+            from actions.utils.change_info.change_name import do_change_change_name
+            do_change_change_name(driver, uid)
+            
+        if task_config.get("IsChangeCityNow", False):
+            from actions.utils.change_info.city_now import do_change_city_now
+            do_change_city_now(driver, uid)
+            
+        if task_config.get("IsChangeHometown", False):
+            from actions.utils.change_info.quequan import do_change_quequan
+            do_change_quequan(driver, uid)
+            
+        if task_config.get("IsChangeHighSchool", False):
+            from actions.utils.change_info.thpt import do_change_thpt
+            do_change_thpt(driver, uid)
+            
+        if task_config.get("IsChangeUniversity", False):
+            from actions.utils.change_info.uni import do_change_uni
+            do_change_uni(driver, uid)
+            
+        if task_config.get("IsChangeRelationship", False):
+            from actions.utils.change_info.moiquanhe import do_change_moiquanhe
+            do_change_moiquanhe(driver, uid)
             
         return result
 

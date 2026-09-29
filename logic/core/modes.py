@@ -581,7 +581,7 @@ def run_cli():
 
         elif choice == "10":
             # MODE 10: UPLOAD AVATAR
-            print(f" BẮT ĐẦU CHẾ ĐỘ 10: Upload Avatar ({max_threads} luồng)")
+            #print(f" BẮT ĐẦU CHẾ ĐỘ 10: Upload Avatar ({max_threads} luồng)")
             
             if task_config:
                 current_cookies = task_config.get("SelectedAccountsInfo", [])
