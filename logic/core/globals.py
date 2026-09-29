@@ -19,3 +19,6 @@ def get_window_pos(index):
     x = col * (WIN_WIDTH + 10)
     y = row * (WIN_HEIGHT + 10)
     return (x, y, WIN_WIDTH, WIN_HEIGHT)
+
+SHARED_GROUP_LOCK = threading.Lock()
+SHARED_GROUP_INDEX = 0

@@ -168,12 +168,21 @@ def run_cli():
         elif choice == "5":
             # MODE 5: JOIN GROUPS
             print(f" BẮT ĐẦU CHẾ ĐỘ 5: Join Groups ({max_threads} luồng)")
-            group_join_list = read_file(getattr(config, "GROUP_JOIN_FILE", "resources/id_groups_join.txt"))
+            
+            if task_config and "GroupUids" in task_config:
+                group_join_list = task_config.get("GroupUids", [])
+            else:
+                group_join_list = read_file(getattr(config, "GROUP_JOIN_FILE", "resources/id_groups_join.txt"))
+                
             if not group_join_list:
-                print(f" Không tìm thấy file {getattr(config, 'GROUP_JOIN_FILE', 'resources/id_groups_join.txt')} hoặc file trống.")
+                print(f" Không có danh sách nhóm để tham gia.")
                 sys.exit(1)
             
-            current_cookies = read_file(config.COOKIE_FILE)
+            if task_config and task_config.get("SelectedAccountsInfo"):
+                current_cookies = task_config.get("SelectedAccountsInfo")
+            else:
+                current_cookies = read_file(config.COOKIE_FILE)
+
             if not current_cookies:
                 print(" Danh sách tài khoản trống.")
                 sys.exit(0)
@@ -188,7 +197,7 @@ def run_cli():
                     futures = []
                     for idx, cookie in enumerate(batch):
                         slot_index = idx % max_threads
-                        futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=5, group_join_list=group_join_list, cycle_count=proxy_turn))
+                        futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=5, group_join_list=group_join_list, cycle_count=proxy_turn, task_config=task_config))
                     for f in futures:
                         f.result()
                 batch_id += 1
@@ -380,19 +389,29 @@ def run_cli():
             print("3. Rời nhóm NGOẠI TRỪ DANH SÁCH ID")
             print("-"*30)
             
-            og_mode = input("👉 Chọn chế độ (1/2/3): ").strip()
+            og_mode = "1"
             og_list = []
             
-            if og_mode in ["2", "3"]:
-                print("\n Dán danh sách GID/Link nhóm (mỗi dòng 1 cái).")
-                print("Xong thì nhấn Enter -> Ctrl+Z -> Enter:")
-                try:
-                    raw_input = sys.stdin.read()
-                    og_list = [x.strip() for x in raw_input.splitlines() if x.strip()]
-                    print(f" Đã nhận {len(og_list)} ID nhóm.")
-                except EOFError: pass
+            if task_config and "OutGroupMode" in task_config:
+                og_mode = str(task_config["OutGroupMode"] + 1)
+                og_list = task_config.get("GroupUids", [])
+                print(f" Đã nhận cấu hình từ UI: Chế độ {og_mode}, {len(og_list)} ID nhóm.")
+            else:
+                og_mode = input("👉 Chọn chế độ (1/2/3): ").strip()
+                if og_mode in ["2", "3"]:
+                    print("\n Dán danh sách GID/Link nhóm (mỗi dòng 1 cái).")
+                    print("Xong thì nhấn Enter -> Ctrl+Z -> Enter:")
+                    try:
+                        raw_input = sys.stdin.read()
+                        og_list = [x.strip() for x in raw_input.splitlines() if x.strip()]
+                        print(f" Đã nhận {len(og_list)} ID nhóm.")
+                    except EOFError: pass
 
-            current_cookies = read_file(config.COOKIE_FILE)
+            if task_config and task_config.get("SelectedAccountsInfo"):
+                current_cookies = task_config.get("SelectedAccountsInfo")
+            else:
+                current_cookies = read_file(config.COOKIE_FILE)
+
             if not current_cookies:
                 print(" Danh sách tài khoản trống.")
                 sys.exit(0)
@@ -408,7 +427,7 @@ def run_cli():
                     for idx, cookie in enumerate(batch):
                         slot_index = idx % max_threads
                         futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, 
-                                        execution_mode=7, out_group_mode=og_mode, out_group_list=og_list, cycle_count=proxy_turn))
+                                        execution_mode=7, out_group_mode=og_mode, out_group_list=og_list, cycle_count=proxy_turn, task_config=task_config))
                     for f in futures:
                         f.result()
                 batch_id += 1

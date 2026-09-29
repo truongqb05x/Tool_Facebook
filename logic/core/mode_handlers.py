@@ -463,7 +463,19 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             SCANNED_GROUPS_CACHE[uid] = list(g_list)
 
     if g_list:
-        group_iterator = iter(g_list)
+        def shared_iterator():
+            global SHARED_GROUP_INDEX, SHARED_GROUP_LOCK
+            if 'SHARED_GROUP_LOCK' not in globals():
+                import threading
+                globals()['SHARED_GROUP_LOCK'] = threading.Lock()
+                globals()['SHARED_GROUP_INDEX'] = 0
+
+            while True:
+                with globals()['SHARED_GROUP_LOCK']:
+                    idx = globals()['SHARED_GROUP_INDEX']
+                    globals()['SHARED_GROUP_INDEX'] += 1
+                yield g_list[idx % len(g_list)]
+        group_iterator = shared_iterator()
     else:
         group_iterator = iter([])
 
@@ -533,7 +545,7 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                 print(f"[{uid}]  Thử sang group khác ({retry_group_count}/5)...")
         
         if not found_and_commented:
-            print(f"[{uid}]  Đã thử 5 group nhưng không tìm thấy bài viết phù hợp. Dừng account này.")
+            #print(f"[{uid}]  Đã thử 5 group nhưng không tìm thấy bài viết phù hợp. Dừng account này.")
             break
         
         if success_count >= max_comments:
