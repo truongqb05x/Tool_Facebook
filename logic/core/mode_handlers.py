@@ -382,13 +382,13 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         return True
 
     if execution_mode == 10:
-        print(f"[{uid}]  MODE 10: Thay đổi thông tin...")
+        #print(f"[{uid}]  MODE 10: Thay đổi thông tin...")
         
         is_up_avatar = task_config.get("IsUpAvatar", False) if task_config else False
         result = True
         
         if is_up_avatar:
-            print(f"[{uid}]  Tiến hành Upload Avatar...")
+            #print(f"[{uid}]  Tiến hành Upload Avatar...")
             from actions.utils.avatar_utils import upload_avatar_and_status
             from config.config import AVATAR_FOLDER, AVATAR_STT_FILE
             
@@ -397,9 +397,9 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             
             result = upload_avatar_and_status(driver, wait, avatar_folder, AVATAR_STT_FILE, is_skip_if_has_avatar=is_skip)
             if result:
-                print(f"[{uid}]  MODE 10: Xử lý avatar thành công.")
+                print(f"[{uid}]  Upload avatar thành công.")
             else:
-                print(f"[{uid}]  MODE 10: Xử lý avatar thất bại hoặc bị bỏ qua.")
+                print(f"[{uid}]  Upload avatar thất bại hoặc bị bỏ qua.")
         
         if task_config.get("IsChangeName", False):
             from actions.utils.change_info.change_name import do_change_change_name
@@ -578,7 +578,7 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                 found_and_commented = False
                 break # Thoát khỏi retry_group_count loop
                 
-            if result in ("PRIVATE_GROUP", "MEMBERSHIP_MODAL"):
+            if result in ("PRIVATE_GROUP", "MEMBERSHIP_MODAL", "NOT_JOINED"):
                 print(f"[{uid}]  Lý do chính đáng (Nhóm kín / Yêu cầu câu hỏi). Lấy group khác mà KHÔNG bị tính là lỗi...")
                 continue
             

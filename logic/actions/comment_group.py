@@ -159,6 +159,16 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 group_links = driver.find_elements(By.XPATH, f"//a[contains(@href, '/groups/{g_id}')]")
                 for glnk in group_links:
                     if glnk.is_displayed():
+                        # Kiểm tra trạng thái chờ duyệt trên giao diện danh sách
+                        try:
+                            list_item = glnk.find_element(By.XPATH, "./ancestor::div[@role='listitem']")
+                            item_text = list_item.text.lower()
+                            if "đã yêu cầu" in item_text or "đang chờ" in item_text or "requested" in item_text or "pending" in item_text:
+                                print(f"[{uid}] ⏳ Nhóm {g_id} đang ở trạng thái chờ duyệt. Bỏ qua.")
+                                continue # Bỏ qua không click link này
+                        except:
+                            pass
+                            
                         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", glnk)
                         time.sleep(1)
                         glnk.click()
@@ -172,50 +182,8 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
             time.sleep(2)
             
         if not group_clicked:
-            # Nếu không tìm thấy trong danh sách đã tham gia, thử kiểm tra và tham gia nhóm
-            #print(f"[{uid}] Không tìm thấy trong danh sách nhóm đã tham gia. Tiến hành kiểm tra và tham gia...")
-            join_single_group(driver, None, uid, g_id)
-            time.sleep(2)
-            
-            script_target = f"""
-                var a = document.createElement('a');
-                a.href = '{target_url}';
-                document.body.appendChild(a);
-                a.click();
-            """
-            driver.execute_script(script_target)
-            time.sleep(5)
-            
-            # Kiểm tra xem có phải nhóm riêng tư sau khi join (chờ duyệt hoặc không có quyền xem feed)
-            is_private = False
-            try:
-                private_xpaths = [
-                    "//*[contains(text(), 'Nhóm Riêng tư')]",
-                    "//*[contains(text(), 'Nhóm riêng tư')]",
-                    "//*[contains(text(), 'Private group')]",
-                    "//*[contains(text(), 'Private Group')]",
-                    "//*[contains(text(), 'Hủy yêu cầu')]",
-                    "//*[contains(text(), 'Đã yêu cầu')]",
-                    "//*[contains(text(), 'Yêu cầu đang chờ')]",
-                    "//*[contains(text(), 'Đã gửi yêu cầu')]",
-                    "//*[contains(text(), 'Pending')]",
-                    "//*[contains(text(), 'Cancel request')]",
-                    "//*[contains(text(), 'Request sent')]"
-                ]
-                for xpath in private_xpaths:
-                    elements = driver.find_elements(By.XPATH, xpath)
-                    for el in elements:
-                        if el.is_displayed():
-                            is_private = True
-                            break
-                    if is_private:
-                        break
-            except Exception:
-                pass
-                
-            if is_private:
-                print(f"[{uid}] 🔒 Nhóm {g_id} là nhóm riêng tư hoặc đang chờ duyệt. Bỏ qua comment.")
-                return "PRIVATE_GROUP"
+            print(f"[{uid}] ⚠️ Nhóm {g_id} không nằm trong danh sách đã tham gia. Bỏ qua và lấy ID kế tiếp.")
+            return "NOT_JOINED"
         else:
             time.sleep(4)
             if "sorting_setting=CHRONOLOGICAL" not in driver.current_url:
@@ -233,6 +201,33 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
         if f"facebook.com/{g_id}" in current_url and "/groups/" not in current_url:
             print(f"[{uid}] 🚫 Nhóm {g_id} bị chặn hoặc không khả dụng (URL: {current_url}). Bỏ qua ID này.")
             return False
+
+        # Kiểm tra xem có phải nhóm riêng tư hoặc đang chờ duyệt
+        is_private = False
+        try:
+            private_xpaths = [
+                "//*[contains(text(), 'Hủy yêu cầu')]",
+                "//*[contains(text(), 'Đã yêu cầu')]",
+                "//*[contains(text(), 'Yêu cầu đang chờ')]",
+                "//*[contains(text(), 'Đã gửi yêu cầu')]",
+                "//*[contains(text(), 'Pending')]",
+                "//*[contains(text(), 'Cancel request')]",
+                "//*[contains(text(), 'Request sent')]"
+            ]
+            for xpath in private_xpaths:
+                elements = driver.find_elements(By.XPATH, xpath)
+                for el in elements:
+                    if el.is_displayed():
+                        is_private = True
+                        break
+                if is_private:
+                    break
+        except Exception:
+            pass
+            
+        if is_private:
+            print(f"[{uid}] 🔒 Nhóm {g_id} là nhóm riêng tư hoặc yêu cầu đang chờ duyệt. Bỏ qua comment.")
+            return "PRIVATE_GROUP"
 
         # Đợi modal (nếu có) xuất hiện, thử nhiều lần trong 8 giây
         modal_closed = False

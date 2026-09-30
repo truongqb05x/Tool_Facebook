@@ -53,14 +53,20 @@ def upload_avatar_and_status(driver, wait, avatar_folder, stt_file, is_skip_if_h
 
         if is_skip_if_has_avatar:
             try:
-                import time
-                time.sleep(1) # wait for menu items to render
-                view_btn = driver.find_elements(By.XPATH, "//span[contains(text(),'Xem ảnh đại diện') or contains(text(),'View profile picture')]")
+                from selenium.webdriver.support.ui import WebDriverWait
+                from selenium.webdriver.common.keys import Keys
+                from selenium.webdriver.common.action_chains import ActionChains
+                
+                # Chờ thông minh tối đa 60s cho bất kỳ item nào của menu hiện ra
+                wait_60 = WebDriverWait(driver, 60)
+                wait_60.until(EC.presence_of_element_located((
+                    By.XPATH, "//*[contains(text(),'Xem ảnh đại diện') or contains(text(),'View profile picture') or contains(text(),'Chọn ảnh đại diện') or contains(text(),'Choose profile picture') or contains(text(),'Tải ảnh lên') or contains(text(),'Upload photo')]"
+                )))
+                
+                view_btn = driver.find_elements(By.XPATH, "//*[contains(text(),'Xem ảnh đại diện') or contains(text(),'View profile picture')]")
                 if view_btn:
                     print(" Phát hiện tài khoản đã có avatar. Bỏ qua upload.")
                     # Bấm ESC để đóng menu
-                    from selenium.webdriver.common.keys import Keys
-                    from selenium.webdriver.common.action_chains import ActionChains
                     ActionChains(driver).send_keys(Keys.ESCAPE).perform()
                     return True
             except Exception as e:
@@ -70,7 +76,7 @@ def upload_avatar_and_status(driver, wait, avatar_folder, stt_file, is_skip_if_h
         try:
             choose_btn = wait.until(EC.element_to_be_clickable((
                 By.XPATH,
-                "//span[contains(text(),'Chọn ảnh đại diện') or contains(text(),'Choose profile picture')]"
+                "//*[contains(text(),'Chọn ảnh đại diện') or contains(text(),'Choose profile picture') or contains(text(),'Tải ảnh lên') or contains(text(),'Upload photo')]"
             )))
         except TimeoutException:
             choose_btn = wait.until(EC.element_to_be_clickable((
