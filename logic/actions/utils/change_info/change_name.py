@@ -28,8 +28,9 @@ def do_change_change_name(driver, uid, flow_type="1"):
         
         import os
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        ho_path = os.path.join(current_dir, "resources", "ho.txt")
-        ten_path = os.path.join(current_dir, "resources", "ten.txt")
+        logic_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        ho_path = os.path.join(logic_dir, "resources", "ho.txt")
+        ten_path = os.path.join(logic_dir, "resources", "ten.txt")
         
         with open(ho_path, 'r', encoding='utf-8') as f:
             list_ho = [x.strip() for x in f.readlines() if x.strip()]

@@ -29,13 +29,41 @@ def generate_auto_comment():
 
 def close_obstructing_modals(driver, uid):
     try:
-        close_btns = driver.find_elements(By.XPATH, "//div[@aria-label='Đóng' and @role='button']")
-        for btn in close_btns:
-            if btn.is_displayed():
-                driver.execute_script("arguments[0].click();", btn)
-                time.sleep(1)
-    except Exception:
-        pass
+        current_url = driver.current_url
+        if "/posts/" in current_url or "/permalink/" in current_url:
+            print(f"[{uid}] 🔍 URL đang dạng Post, chờ nút Đóng tối đa 30s...")
+            for wait_sec in range(30):
+                # Lấy tất cả nút Đóng, không giới hạn SVG để bao phủ tất cả các dạng modal
+                close_btns = driver.find_elements(By.XPATH, "//div[(@aria-label='Đóng' or @aria-label='Close' or @aria-label='Thoát') and @role='button']")
+                if close_btns:
+                    for i, btn in enumerate(close_btns):
+                        # Kích hoạt sự kiện chuột cấp thấp (vượt qua mọi lớp chặn của React/Facebook)
+                        try:
+                            script = "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));"
+                            driver.execute_script(script, btn)
+                        except: pass
+                        
+                        # JS click thông thường
+                        try:
+                            driver.execute_script("arguments[0].click();", btn)
+                        except: pass
+                        
+                        # Native click
+                        try:
+                            if btn.is_displayed():
+                                btn.click()
+                        except: pass
+                        
+                    print(f"[{uid}] ✅ Đã tìm thấy và click nút Đóng modal bài viết.")
+                    time.sleep(1)
+                    break
+                else:
+                    time.sleep(1)
+        else:
+            # Nếu url là dạng feed trang chủ group thì bỏ qua không cần check nút Đóng
+            pass
+    except Exception as e:
+        print(f"[{uid}] Lỗi đóng modal: {e}")
 
 
 def check_comment_status_after_post(driver, uid):
@@ -234,15 +262,19 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
         for _ in range(4): # Thử 4 lần, mỗi lần chờ 2 giây
             time.sleep(2)
             try:
-                close_modal_xpath = "//div[@role='dialog']//div[@aria-label='Đóng' and @role='button']"
+                close_modal_xpath = "//div[@role='dialog']//div[(@aria-label='Đóng' or @aria-label='Close') and @role='button']"
                 close_btns = driver.find_elements(By.XPATH, close_modal_xpath)
                 for btn in close_btns:
-                    if btn.is_displayed():
-                        # Dùng JavaScript click để chắc chắn không bị block bởi UI khác
+                    try:
+                        script = "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));"
+                        driver.execute_script(script, btn)
+                    except: pass
+                    try:
                         driver.execute_script("arguments[0].click();", btn)
-                        modal_closed = True
-                        time.sleep(1)
-                        break
+                    except: pass
+                    modal_closed = True
+                    time.sleep(1)
+                    break
                 if modal_closed:
                     break
             except Exception:
@@ -289,13 +321,32 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 
                 comment_box_found = False
                 is_permalink_fallback = False
-                for scan_idx in range(20):
-                    scroll_dist = random.randint(400, 600)
-                    driver.execute_script(f"window.scrollBy(0, {scroll_dist});")
-                    time.sleep(4)
+                
+                # Hàm kiểm tra thời gian
+                def is_valid_time(pt):
+                    pt_lower = pt.lower()
+                    invalid_keywords = ["ngày", "tháng", "năm", "day", "month", "year", "tuần", "week"]
+                    for kw in invalid_keywords:
+                        if kw in pt_lower:
+                            return False
+                    valid_keywords = ["giây", "phút", "giờ", "second", "minute", "hour", "vừa xong", "just now"]
+                    for kw in valid_keywords:
+                        if kw in pt_lower:
+                            return True
+                    return False
                     
+                # Load lịch sử post đã comment
+                history_file = "resources/commented_post_ids.txt"
+                commented_posts = []
+                try:
+                    with FILE_LOCK:
+                        if os.path.exists(history_file):
+                            with open(history_file, 'r', encoding='utf-8') as f:
+                                commented_posts = f.read().splitlines()
+                except: pass
+
+                for scan_idx in range(10): # Tối đa 10 lần cuộn
                     try:
-                        # ƯU TIÊN 1: Tìm ô textbox TRƯỚC, nếu đã có sẵn thì KHÔNG CẦN click nút "Bình luận" (tránh bị chuyển sang bài viết)
                         comment_boxes = driver.find_elements(By.XPATH, "//div[@role='textbox' and @contenteditable='true' and not(@data-commented='true')]")
                         box_to_comment = None
                         
@@ -307,7 +358,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                 box_to_comment = box
                                 break
                         
-                        # ƯU TIÊN 2: Nếu chưa có ô comment, mới thử click nút "Bình luận"
                         if not box_to_comment:
                             comment_btns = driver.find_elements(By.XPATH, "//div[@role='button' and (@aria-label='Bình luận' or @aria-label='Comment' or @aria-label='Viết bình luận' or @aria-label='Write a comment' or @aria-label='Để lại bình luận' or @aria-label='Leave a comment') and not(@data-scanned='true')]")
                             for btn in comment_btns:
@@ -315,14 +365,12 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     try:
                                         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
                                         time.sleep(1)
-                                    except:
-                                        pass
+                                    except: pass
                                     driver.execute_script("arguments[0].setAttribute('data-scanned', 'true')", btn)
                                     driver.execute_script("arguments[0].click();", btn)
                                     time.sleep(2)
-                                    break # Chỉ click 1 nút rồi kiểm tra lại
-                            
-                            # Kiểm tra lại ô comment sau khi click
+                                    break
+                                    
                             comment_boxes = driver.find_elements(By.XPATH, "//div[@role='textbox' and @contenteditable='true' and not(@data-commented='true')]")
                             for box in comment_boxes:
                                 if box.is_displayed():
@@ -332,10 +380,68 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     box_to_comment = box
                                     break
 
-                        # NẾU TÌM THẤY Ô COMMENT -> XỬ LÝ
                         if box_to_comment:
                             driver.execute_script("arguments[0].setAttribute('data-commented', 'true')", box_to_comment)
                             
+                            # Lấy link bài viết và thời gian
+                            real_post_link = None
+                            post_time = "Không xác định"
+                            post_id = ""
+                            try:
+                                post_container = box_to_comment.find_element(By.XPATH, "./ancestor::div[.//a[@role='link' and @target='_blank']][1]")
+                                post_links = post_container.find_elements(By.XPATH, ".//a[@role='link' and @target='_blank']")
+                                
+                                for link in post_links:
+                                    try:
+                                        try:
+                                            parent_text = link.find_element(By.XPATH, "..").text
+                                            if parent_text: post_time = parent_text.split("·")[0].strip()
+                                        except: pass
+
+                                        href = link.get_attribute("href")
+                                        if href and ("/posts/" in href or "/permalink/" in href):
+                                            real_post_link = href
+                                            break
+                                        
+                                        from selenium.webdriver.common.action_chains import ActionChains
+                                        ActionChains(driver).move_to_element(link).perform()
+                                        time.sleep(1)
+                                        
+                                        href_after_hover = link.get_attribute("href")
+                                        if href_after_hover and ("/posts/" in href_after_hover or "/permalink/" in href_after_hover):
+                                            real_post_link = href_after_hover
+                                            break
+                                    except: pass
+                                    
+                                if not real_post_link and post_links:
+                                    href = post_links[0].get_attribute("href")
+                                    if href: real_post_link = href
+                                        
+                                if real_post_link:
+                                    if "/posts/" in real_post_link or "/permalink/" in real_post_link:
+                                        real_post_link = real_post_link.split("?")[0]
+                                    import re
+                                    match = re.search(r'/(?:posts|permalink)/(\d+)', real_post_link)
+                                    if match: post_id = match.group(1)
+                                    else: post_id = real_post_link.rstrip("/").split("/")[-1]
+                            except Exception as e:
+                                pass
+                                
+                            print(f"[{uid}] 🕒 Thời gian đăng: {post_time} | ID: {post_id}")
+                            
+                            if not is_valid_time(post_time):
+                                print(f"[{uid}] ⏭️ Bỏ qua vì thời gian ({post_time}) không thỏa mãn (chứa ngày/tháng/năm).")
+                                driver.execute_script("window.scrollBy(0, 400);")
+                                time.sleep(2)
+                                continue
+                                
+                            if post_id and post_id in commented_posts:
+                                print(f"[{uid}] ⏭️ Bỏ qua vì post_id {post_id} đã được comment trước đó.")
+                                driver.execute_script("window.scrollBy(0, 400);")
+                                time.sleep(2)
+                                continue
+                                
+                            # OK, thực hiện comment
                             delay1 = random.randint(1, 10)
                             time.sleep(delay1)
                             
@@ -347,7 +453,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             
                             comment_input = box_to_comment
                                 
-                            # Cuộn ô comment ra giữa màn hình để tránh bị che bởi header/footer và click nhầm vào sticker
                             try:
                                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", comment_input)
                                 time.sleep(1)
@@ -378,15 +483,14 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     else:
                                         content = target_edit_content
                             time.sleep(random.uniform(2, 5))
-                            # --- PERMALINK FALLBACK LOGIC ---
+                            
                             current_url = driver.current_url
                             if "/permalink/" in current_url or "/posts/" in current_url or "story_fbid=" in current_url:
                                 collected_links.add(current_url)
                                 is_permalink_fallback = True
                                 break
-                            # ---------------------------------
+                            
                             if is_image_comment:
-                                # Click và focus vào ô comment để Facebook hiện nút Send (Submit)
                                 driver.execute_script("arguments[0].click(); arguments[0].focus();", comment_input)
                                 time.sleep(2)
                                 
@@ -394,7 +498,6 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     type_human_like(driver, content, element=comment_input)
                                     time.sleep(2)
                                 
-                                # images_dir đã được lấy từ task_config ở trên
                                 image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
                                 available_images = []
                                 if os.path.exists(images_dir):
@@ -406,15 +509,12 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                 
                                 file_input = None
                                 
-                                # Ưu tiên tìm input file TRONG CÙNG FORM với ô comment để không nhầm bài khác
                                 try:
                                     parent_form = comment_input.find_element(By.XPATH, "./ancestor::form")
                                     if parent_form:
                                         els = parent_form.find_elements(By.XPATH, ".//input[@type='file']")
-                                        if els:
-                                            file_input = els[0]
-                                except:
-                                    pass
+                                        if els: file_input = els[0]
+                                except: pass
                                     
                                 if not file_input:
                                     try:
@@ -449,8 +549,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                                     submitted = True
                                                     break
                                             except: continue
-                                        if submitted:
-                                            break
+                                        if submitted: break
                                         time.sleep(1)
                                     if not submitted:
                                         ActionChains(driver).send_keys(Keys.ENTER).perform()
@@ -459,26 +558,20 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     print(f"[{uid}] ❌ Không tìm thấy input ảnh.")
                                     return False
                             else:
-                                # Chỉ focus phần tử qua JS, sau đó gõ phím trực tiếp vào phần tử đó, bỏ qua click chuột!
                                 driver.execute_script("arguments[0].click(); arguments[0].focus();", comment_input)
                                 time.sleep(1)
                                 type_human_like(driver, content, element=None)
                                 ActionChains(driver).send_keys(Keys.ENTER).perform()
-                                #print(f"[{uid}] ✅ Đã gửi comment text trực tiếp.")
                                 time.sleep(5)
                             
-                            # ===== KIỂM TRA BỊ CHẶN / CHỜ DUYỆT (DIRECT MODE) =====
+                            # ===== KIỂM TRA BỊ CHẶN / CHỜ DUYỆT =====
                             _status = check_comment_status_after_post(driver, uid)
-                            if _status in ("BLOCK_MODAL_DETECTED", "BLOCK_EDIT_DETECTED"):
-                                return _status
-                            if _status == "MEMBERSHIP_MODAL":
-                                return "MEMBERSHIP_MODAL"
-                            # ========================================================
+                            is_success = True
+                            if _status in ("BLOCK_MODAL_DETECTED", "BLOCK_EDIT_DETECTED", "MEMBERSHIP_MODAL"):
+                                is_success = False
                             
-                            # ================= START EDIT & RE-COMMENT =================
-                            if is_edit_comment == "yes":
+                            if is_edit_comment == "yes" and is_success:
                                 try:
-                                    #print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Direct)...")
                                     comment_text_xpath = f"//*[contains(text(), '{content}')]"
                                     posted_comment = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, comment_text_xpath)))
                                     
@@ -511,15 +604,28 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     time.sleep(3)
                                 except Exception as e_edit:
                                     print(f"[{uid}] ⚠️ Lỗi quy trình sửa comment: {e_edit}")
-                            # ===========================================================
+                                    is_success = False
+
+                            # Chỉ lưu vào lịch sử nếu thao tác comment hoàn tất thành công và không bị pending/block
+                            if is_success and post_id:
+                                with FILE_LOCK:
+                                    # Tạo thư mục nếu chưa có
+                                    os.makedirs(os.path.dirname(history_file), exist_ok=True)
+                                    with open(history_file, 'a', encoding='utf-8') as f:
+                                        f.write(post_id + "\n")
+                                print(f"[{uid}] ✅ Đã lưu post_id {post_id} vào lịch sử.")
+
+                            if _status in ("BLOCK_MODAL_DETECTED", "BLOCK_EDIT_DETECTED"): return _status
+                            if _status == "MEMBERSHIP_MODAL": return "MEMBERSHIP_MODAL"
 
                             comment_box_found = True
                             break
                     except Exception as e:
                         pass
                         
-                    if comment_box_found or is_permalink_fallback:
-                        break
+                    # Cuộn tiếp nếu chưa thấy ô comment hoặc đã bỏ qua bài viết
+                    driver.execute_script("window.scrollBy(0, 400);")
+                    time.sleep(2)
                 
                 if comment_box_found or is_permalink_fallback:
                     break

@@ -68,7 +68,7 @@ def run_account_flow(cookie_line, window_index):
     proxy_str = None
     kiot_keys = []
     # --- Test cứng Proxy theo yêu cầu ---
-    proxy_str = "miennam.vnproxy.com:41773:8K35Fz:4jIe50"
+    proxy_str = "171.249.209.132:31731:8K35Fz:4jIe50"
     proxy_config = parse_proxy_str(proxy_str)
     print(f"[Thread-{flow_type}] Sử dụng Proxy chỉ định: {proxy_str}")
     
@@ -139,98 +139,189 @@ def run_account_flow(cookie_line, window_index):
         
         if login_verified:
             print(f"[Thread-{flow_type}] Xác minh login thành công.")
+            
             try:
-                print(f"[Thread-{flow_type}] Truy cập vào tab Chi tiết cá nhân của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_personal_details")
-                from selenium.webdriver.support.ui import WebDriverWait
-                from selenium.webdriver.support import expected_conditions as EC
-                wait_60 = WebDriverWait(driver, 60)
+                print(f"[Thread-{flow_type}] Đang truy cập group: https://www.facebook.com/groups/dhsphue")
+                driver.get("https://www.facebook.com/groups/dhsphue?sorting_setting=CHRONOLOGICAL")
+                time.sleep(8)
                 
-                print(f"[Thread-{flow_type}] Đang chờ trang tải...")
-                time.sleep(5)
+                # Tìm bài viết từ trên xuống dưới mà không bỏ qua bài đầu
+                print(f"[Thread-{flow_type}] Bắt đầu tìm ô comment...")
+                box_to_comment = None
                 
-                def click_hard(drv, element):
-                    from selenium.webdriver.common.action_chains import ActionChains
-                    try: drv.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)
-                    except: pass
-                    time.sleep(0.5)
-                    try: element.click(); return True
-                    except: pass
-                    try: ActionChains(drv).move_to_element(element).click().perform(); return True
-                    except: pass
-                    try: drv.execute_script("arguments[0].click();", element)
-                    except: pass
-                    try:
-                        drv.execute_script("""
-                            var el = arguments[0];
-                            for(var i=0; i<8; i++) {
-                                if(el) { try { el.click(); } catch(e){} el = el.parentElement; }
-                            }
-                        """, element)
-                        return True
-                    except: pass
-                    return False
-                    
-                
-                # --- XỬ LÝ TRƯỜNG ĐẠI HỌC ---
-                print(f"[Thread-{flow_type}] Truy cập vào tab Giáo dục của profile...")
-                driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_education")
-                time.sleep(5)
-                
-                print(f"[Thread-{flow_type}] Kiểm tra xem đã có Trường cao đẳng/đại học chưa...")
-                # Khi đã có, FB hiện nút aria-label="Chỉnh sửa trường cao đẳng/đại học"
-                xpath_edu_filled = "//*[@aria-label='Chỉnh sửa trường cao đẳng/đại học' or @aria-label='Edit college' or @aria-label='Edit university']"
-                if driver.find_elements(By.XPATH, xpath_edu_filled):
-                    print(f"[Thread-{flow_type}] BỎ QUA: Tài khoản đã có sẵn thông tin Trường đại học rồi!")
-                    return
-                else:
-                    print(f"[Thread-{flow_type}] Đang tìm nút 'Trường cao đẳng/đại học'...")
-                    xpath_edu_btn = "//*[contains(text(), 'Trường cao đẳng') or contains(text(), 'đại học') or contains(text(), 'College') or contains(text(), 'University')]"
-                    edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_edu_btn)))
-                    
-                    print(f"[Thread-{flow_type}] Đã thấy mục, tiến hành click...")
-                    for el in edu_els:
-                        click_hard(driver, el)
-                        time.sleep(0.5)
-                    
-                    print(f"[Thread-{flow_type}] Đang chờ ô nhập tên trường xuất hiện...")
-                    xpath_input_edu = "//input[contains(@aria-label, 'đại học') or contains(@aria-label, 'cao đẳng') or contains(@aria-label, 'trường') or contains(@aria-label, 'College') or contains(@aria-label, 'University') or contains(@aria-label, 'School')]"
-                    input_edu_els = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_input_edu)))
-                    
-                    active_edu = None
-                    for in_el in input_edu_els:
-                        if click_hard(driver, in_el):
-                            active_edu = in_el
+                for scan_step in range(5):
+                    comment_boxes = driver.find_elements(By.XPATH, "//div[@role='textbox' and @contenteditable='true']")
+                    for box in comment_boxes:
+                        if box.is_displayed():
+                            aria_label = box.get_attribute("aria-label") or ""
+                            # Bỏ qua ô đăng bài viết mới
+                            if "viết gì đó" in aria_label.lower() or "write something" in aria_label.lower():
+                                continue
+                            box_to_comment = box
                             break
-                        time.sleep(0.5)
                     
-                    if active_edu:
-                        print(f"[Thread-{flow_type}] Đang nhập tên trường...")
-                        target_edu = "Quảng Bình"
-                        for char in target_edu:
-                            try: active_edu.send_keys(char)
+                    if box_to_comment:
+                        break
+                        
+                    # Nếu chưa có ô comment, tìm nút "Bình luận"
+                    comment_btns = driver.find_elements(By.XPATH, "//div[@role='button' and (@aria-label='Bình luận' or @aria-label='Comment' or @aria-label='Viết bình luận') and not(@data-scanned='true')]")
+                    btn_clicked = False
+                    for btn in comment_btns:
+                        if btn.is_displayed():
+                            try:
+                                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+                                time.sleep(1)
+                                driver.execute_script("arguments[0].setAttribute('data-scanned', 'true')", btn)
+                                driver.execute_script("arguments[0].click();", btn)
+                                time.sleep(2)
+                                btn_clicked = True
+                                break
                             except: pass
-                            time.sleep(random.uniform(0.1, 0.3))
+                    
+                    if btn_clicked:
+                        # Kiểm tra lại ô comment sau khi click
+                        comment_boxes = driver.find_elements(By.XPATH, "//div[@role='textbox' and @contenteditable='true']")
+                        for box in comment_boxes:
+                            if box.is_displayed():
+                                aria_label = box.get_attribute("aria-label") or ""
+                                if "viết gì đó" in aria_label.lower() or "write something" in aria_label.lower():
+                                    continue
+                                box_to_comment = box
+                                break
+                                
+                    if box_to_comment:
+                        break
                         
-                        print(f"[Thread-{flow_type}] Đang chờ danh sách gợi ý trường xuất hiện...")
-                        xpath_opts = "//ul[@role='listbox']//li[@role='option']"
-                        edu_options = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_opts)))
-                        
-                        print(f"[Thread-{flow_type}] Đã tìm thấy {len(edu_options)} gợi ý. Chọn ngẫu nhiên...")
-                        random_edu = random.choice(edu_options)
-                        click_hard(driver, random_edu)
-                        time.sleep(random.uniform(1.0, 2.0))
-                        
-                        print(f"[Thread-{flow_type}] Đang ấn nút Lưu...")
-                        xpath_save = "//*[text()='Lưu' or text()='Save']/ancestor::div[@role='button'] | //*[text()='Lưu' or text()='Save']"
-                        save_edu = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, xpath_save)))
-                        for s_el in save_edu:
-                            click_hard(driver, s_el)
-                            time.sleep(0.5)
-                        
-                        print(f"[Thread-{flow_type}] Đã hoàn tất 100% quy trình cập nhật Trường đại học!")
+                    # Cuộn nhẹ để tìm bài tiếp theo
+                    driver.execute_script("window.scrollBy(0, 400);")
+                    time.sleep(2)
+                
+                if box_to_comment:
+                        print(f"[Thread-{flow_type}] Đã tìm thấy ô bình luận, đang lấy link bài viết...")
+                        try:
+                            # Tìm div bọc cả bài viết (chứa cả ô comment và thẻ a target='_blank' của thời gian đăng bài)
+                            post_container = box_to_comment.find_element(By.XPATH, "./ancestor::div[.//a[@role='link' and @target='_blank']][1]")
+                            
+                            post_links = post_container.find_elements(By.XPATH, ".//a[@role='link' and @target='_blank']")
+                            real_post_link = None
+                            post_time = "Không xác định"
+                            found_link_element = None
+                            
+                            for link in post_links:
+                                try:
+                                    # Cố gắng lấy text thời gian từ thẻ cha
+                                    try:
+                                        parent_text = link.find_element(By.XPATH, "..").text
+                                        if parent_text:
+                                            post_time = parent_text.split("·")[0].strip()
+                                    except:
+                                        pass
+
+                                    href = link.get_attribute("href")
+                                    if href and ("/posts/" in href or "/permalink/" in href):
+                                        real_post_link = href
+                                        found_link_element = link
+                                        break
+                                    
+                                    # Hover để Facebook kích hoạt đổi href thật
+                                    from selenium.webdriver.common.action_chains import ActionChains
+                                    ActionChains(driver).move_to_element(link).perform()
+                                    time.sleep(1)
+                                    
+                                    href_after_hover = link.get_attribute("href")
+                                    if href_after_hover and ("/posts/" in href_after_hover or "/permalink/" in href_after_hover):
+                                        real_post_link = href_after_hover
+                                        found_link_element = link
+                                        break
+                                except Exception:
+                                    pass
+                                    
+                            if not real_post_link and post_links:
+                                # Nếu hover không đổi được link thật, thì lấy luôn href hiện có
+                                href = post_links[0].get_attribute("href")
+                                if href:
+                                    real_post_link = href
+                                    found_link_element = post_links[0]
+                                    
+                            if real_post_link:
+                                # Xóa bớt các params không cần thiết nếu nó là link sạch
+                                if "/posts/" in real_post_link or "/permalink/" in real_post_link:
+                                    real_post_link = real_post_link.split("?")[0]
+                                    
+                                # Lọc ra ID bài viết
+                                import re
+                                post_id = ""
+                                match = re.search(r'/(?:posts|permalink)/(\d+)', real_post_link)
+                                if match:
+                                    post_id = match.group(1)
+                                else:
+                                    # Fallback nếu không khớp regex nhưng vẫn có ID ở cuối
+                                    post_id = real_post_link.rstrip("/").split("/")[-1]
+                                    
+                                print(f"[Thread-{flow_type}] 🕒 THỜI GIAN ĐĂNG: {post_time}")
+                                print(f"[Thread-{flow_type}] 🔗 ID BÀI VIẾT: {post_id}")
+                                
+                                # --- TEST LOGIC: Nhấn trực tiếp vào thẻ <a> ---
+                                if found_link_element:
+                                    print(f"[Thread-{flow_type}] 🚀 [TEST] Đang click trực tiếp vào thẻ <a> (thời gian bài viết) để mở modal...")
+                                    try:
+                                        # Hủy bỏ thuộc tính target="_blank" để ngăn mở tab mới
+                                        driver.execute_script("arguments[0].removeAttribute('target');", found_link_element)
+                                        # Dùng JS click để mở modal
+                                        script = "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));"
+                                        driver.execute_script(script, found_link_element)
+                                        time.sleep(6) # Đợi modal tải
+                                    except Exception as e_click:
+                                        print(f"[Thread-{flow_type}] ❌ Lỗi khi click link: {e_click}")
+                                    
+                                    print(f"[Thread-{flow_type}] 🔍 Đang tìm nút Đóng (X)...")
+                                    # Lấy tất cả nút Đóng
+                                    close_btns = driver.find_elements(By.XPATH, "//div[(@aria-label='Đóng' or @aria-label='Close' or @aria-label='Thoát') and @role='button']")
+                                    
+                                    if close_btns:
+                                        print(f"[Thread-{flow_type}] ✅ Tìm thấy {len(close_btns)} nút Đóng trên trang.")
+                                        for i, btn in enumerate(close_btns):
+                                            try:
+                                                is_disp = btn.is_displayed()
+                                            except:
+                                                is_disp = "Stale/Hidden"
+                                                
+                                            print(f"[Thread-{flow_type}] 👉 Đang click nút Đóng thứ {i+1} (Selenium is_displayed: {is_disp})...")
+                                            from selenium.webdriver.common.action_chains import ActionChains
+                                            from selenium.webdriver.common.keys import Keys
+                                            
+                                            # Cách 1: Kích hoạt sự kiện chuột cấp thấp
+                                            try:
+                                                script = "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));"
+                                                driver.execute_script(script, btn)
+                                                print(f"[Thread-{flow_type}]    -> JS dispatchEvent THÀNH CÔNG")
+                                            except Exception as e: print(f"[Thread-{flow_type}]    -> JS dispatch lỗi: {e}")
+                                            
+                                            # Cách 2: JS click thông thường
+                                            try:
+                                                driver.execute_script("arguments[0].click();", btn)
+                                            except: pass
+                                            
+                                            # Cách 3: Native click
+                                            try:
+                                                if btn.is_displayed():
+                                                    btn.click()
+                                            except: pass
+                                            
+                                            time.sleep(1.5)
+                                    else:
+                                        print(f"[Thread-{flow_type}] ℹ️ Không tìm thấy nút Đóng nào đang hiển thị trên link này.")
+                                # ------------------------------------------------------
+                            else:
+                                print(f"[Thread-{flow_type}] ❌ Không thể lấy được link bài viết.")
+                                        
+                        except Exception as e:
+                            print(f"[Thread-{flow_type}] Không tìm thấy link post theo cấu trúc HTML: {e}")
+                else:
+                    print(f"[Thread-{flow_type}] Không tìm thấy khung comment nào.")
             except Exception as e:
-                print(f"[Thread-{flow_type}] Lỗi khi tương tác trang cá nhân: {e}")
+                print(f"[Thread-{flow_type}] Lỗi khi xử lý bài viết: {e}")
+
         else:
             print(f"[Thread-{flow_type}] Không thể login, dừng luồng này.")
             return

@@ -162,7 +162,7 @@ def run_cli():
                 for i in range(0, len(current_cookies), max_threads):
                     batch = current_cookies[i:i+max_threads]
                     proxy_turn = f"{cycle_count}_{batch_id}"
-                    print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                    #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                     with ThreadPoolExecutor(max_workers=max_threads) as executor:
                         futures = []
                         for idx, cookie in enumerate(batch):
@@ -174,7 +174,7 @@ def run_cli():
                     if batch_id > 0:
                         print("UI_CLEAR_LOG")
                 
-                print(f" Đã chạy xong 1 vòng ({len(current_cookies)} tài khoản). Nghỉ 3600s trước khi lặp lại từ đầu...")
+                #print(f" Đã chạy xong 1 vòng ({len(current_cookies)} tài khoản). Nghỉ 3600s trước khi lặp lại từ đầu...")
                 time.sleep(3600)
                 cycle_count += 1
 
@@ -316,7 +316,7 @@ def run_cli():
             for i in range(0, len(current_cookies), max_threads):
                 batch = current_cookies[i:i+max_threads]
                 proxy_turn = f"1_{batch_id}"
-                print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                 with ThreadPoolExecutor(max_workers=max_threads) as executor:
                     futures = []
                     for idx, cookie in enumerate(batch):
@@ -393,7 +393,7 @@ def run_cli():
             for i in range(0, len(selected_accounts), max_threads):
                 batch = selected_accounts[i:i+max_threads]
                 proxy_turn = f"1_{batch_id}"
-                print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                 with ThreadPoolExecutor(max_workers=max_threads) as executor:
                     futures = []
                     for idx, cookie in enumerate(batch):
@@ -444,12 +444,12 @@ def run_cli():
                 print(" Danh sách tài khoản trống.")
                 sys.exit(0)
 
-            print(f" BẮT ĐẦU CHẾ ĐỘ 7: Out Group ({max_threads} luồng)")
+            #print(f" BẮT ĐẦU CHẾ ĐỘ 7: Out Group ({max_threads} luồng)")
             batch_id = 0
             for i in range(0, len(current_cookies), max_threads):
                 batch = current_cookies[i:i+max_threads]
                 proxy_turn = f"1_{batch_id}"
-                print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                 with ThreadPoolExecutor(max_workers=max_threads) as executor:
                     futures = []
                     for idx, cookie in enumerate(batch):
@@ -522,7 +522,7 @@ def run_cli():
             for i in range(0, len(current_cookies), max_threads):
                 batch = current_cookies[i:i+max_threads]
                 proxy_turn = f"1_{batch_id}"
-                print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                 with ThreadPoolExecutor(max_workers=max_threads) as executor:
                     futures = []
                     for idx, cookie in enumerate(batch):
@@ -580,7 +580,7 @@ def run_cli():
                 for i in range(0, len(current_cookies), max_threads):
                     batch = current_cookies[i:i+max_threads]
                     proxy_turn = f"{cycle_count}_{batch_id}"
-                    print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                    #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                     with ThreadPoolExecutor(max_workers=max_threads) as executor:
                         futures = []
                         for idx, cookie in enumerate(batch):
@@ -632,7 +632,7 @@ def run_cli():
                 for i in range(0, len(cookies_to_process), max_threads):
                     batch = cookies_to_process[i:i+max_threads]
                     proxy_turn = f"{current_retry + 1}_{batch_id}"
-                    print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
+                    #print(f"\n Đang chạy đợt {batch_id + 1} (gồm {len(batch)} tài khoản)...")
                     
                     with ThreadPoolExecutor(max_workers=max_threads) as executor:
                         future_to_cookie = {}
