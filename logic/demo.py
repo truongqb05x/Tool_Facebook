@@ -37,8 +37,14 @@ def run_account_flow(cookie_line, window_index):
     parts = cookie_line.split("|")
     uid        = parts[0]
     password   = parts[1].strip() if len(parts) > 1 else ""
-    cookie_str = parts[2].strip() if len(parts) > 2 else ""
-    fa2_secret = parts[3].strip() if len(parts) > 3 else ""  # TOTP secret key
+    fa2_secret = ""
+    cookie_str = ""
+    for p in parts[2:]:
+        p = p.strip()
+        if "c_user=" in p or "sb=" in p or "datr=" in p or ";" in p:
+            cookie_str = p
+        elif p.isalnum() and len(p) >= 10:
+            fa2_secret = p
 
     print(f"[Thread-{flow_type}] Bắt đầu tài khoản UID: {uid}")
 
@@ -138,163 +144,15 @@ def run_account_flow(cookie_line, window_index):
                 # Chạy login trong thread riêng để không bị block khi gặp trang 2FA
                 login_done = threading.Event()
                 def _do_login():
-                    login_with_credentials(driver, uid, password)
+                    res = login_with_credentials(driver, uid, password, fa2_secret=fa2_secret)
+                    if res == "INVALID_REQUEST":
+                        print(f"[{uid}] ❌ Lỗi 'Invalid request' 2FA.")
                     login_done.set()
                 login_thread = threading.Thread(target=_do_login, daemon=True)
                 login_thread.start()
 
-                # Poll URL tối đa 35s — phát hiện 2FA thì xử lý ngay
-                two_fa_detected = False
-                end_poll = time.time() + 35
-                while time.time() < end_poll:
-                    time.sleep(1)
-                    try:
-                        curr_url = driver.current_url or ""
-                    except:
-                        break
-                    if "two_step_verification" in curr_url or "two_factor" in curr_url:
-                        two_fa_detected = True
-                        print(f"[Thread-{flow_type}] Phát hiện trang 2FA!")
-                        break
-                    if login_done.is_set():
-                        break  # login xong bình thường (không cần 2FA)
+                login_thread.join(35)
 
-                if two_fa_detected:
-                    if fa2_secret:
-                        try:
-                            import pyotp
-                            totp = pyotp.TOTP(fa2_secret)
-                            code = totp.now()
-                            print(f"[Thread-{flow_type}] Mã 2FA tạo được: {code}")
-
-                            # Tìm ô nhập mã
-                            time.sleep(random.uniform(1.5, 3.0))
-                            otp_input = None
-                            for xp in [
-                                "//input[@type='text'][@autocomplete='off']",
-                                "//input[@id='_r_3_']",
-                                "//input[@type='text']",
-                            ]:
-                                els = driver.find_elements(By.XPATH, xp)
-                                for el in els:
-                                    if el.is_displayed():
-                                        otp_input = el
-                                        break
-                                if otp_input: break
-
-                            if otp_input:
-                                from selenium.webdriver.common.action_chains import ActionChains
-                                driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth', block:'center'});", otp_input)
-                                time.sleep(random.uniform(0.5, 1.2))
-                                ActionChains(driver).move_to_element(otp_input).click().perform()
-                                time.sleep(random.uniform(0.5, 1.0))
-                                for ch in code:
-                                    otp_input.send_keys(ch)
-                                    time.sleep(random.uniform(0.08, 0.18))
-                                print(f"[Thread-{flow_type}] Đã nhập mã 2FA xong.")
-
-                                # Nhấn Tiếp tục
-                                time.sleep(random.uniform(1.0, 2.5))
-                                tiep_tuc_btn = None
-                                for xp in [
-                                    "//div[@role='button'][.//span[normalize-space()='Tiếp tục' or normalize-space()='Continue']][@aria-disabled='false']",
-                                    "//div[@role='button'][.//span[normalize-space()='Tiếp tục' or normalize-space()='Continue']]",
-                                ]:
-                                    els = driver.find_elements(By.XPATH, xp)
-                                    for el in els:
-                                        if el.is_displayed() and el.get_attribute('aria-disabled') != 'true':
-                                            tiep_tuc_btn = el
-                                            break
-                                    if tiep_tuc_btn: break
-
-                                if tiep_tuc_btn:
-                                    driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth', block:'center'});", tiep_tuc_btn)
-                                    time.sleep(random.uniform(0.5, 1.0))
-                                    ActionChains(driver).move_to_element(tiep_tuc_btn).perform()
-                                    time.sleep(random.uniform(0.3, 0.8))
-                                    driver.execute_script("""
-                                        arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));
-                                    """, tiep_tuc_btn)
-                                    print(f"[Thread-{flow_type}] Đã click 'Tiếp tục' sau 2FA!")
-
-                                    # --- Chờ URL chuyển sang trang remember_browser ---
-                                    print(f"[Thread-{flow_type}] Đang chờ trang 'Tin cậy thiết bị' xuất hiện...")
-                                    end_rb = time.time() + 30
-                                    remember_browser_appeared = False
-                                    while time.time() < end_rb:
-                                        time.sleep(1)
-                                        try:
-                                            rb_url = driver.current_url or ""
-                                        except:
-                                            break
-                                        if "remember_browser" in rb_url or "two_factor/remember" in rb_url:
-                                            remember_browser_appeared = True
-                                            print(f"[Thread-{flow_type}] Trang 'Tin cậy thiết bị' đã xuất hiện!")
-                                            break
-                                        # Nếu đã về trang chủ thì xong
-                                        if ("facebook.com" in rb_url
-                                                and "two" not in rb_url
-                                                and "login" not in rb_url
-                                                and "checkpoint" not in rb_url):
-                                            print(f"[Thread-{flow_type}] Đã về trang chủ sau 2FA!")
-                                            break
-
-                                    if remember_browser_appeared:
-                                        time.sleep(random.uniform(1.5, 3.0))
-                                        # Tìm nút "Tin cậy thiết bị này"
-                                        tin_cay_btn = None
-                                        for xp in [
-                                            "//div[@role='button'][.//span[contains(normalize-space(), 'Tin cậy thiết bị')]]",
-                                            "//div[@role='button'][.//span[contains(normalize-space(), 'Trust')]]",
-                                            "//div[@role='button'][.//span[contains(normalize-space(), 'Remember')]]",
-                                        ]:
-                                            els = driver.find_elements(By.XPATH, xp)
-                                            for el in els:
-                                                if el.is_displayed():
-                                                    tin_cay_btn = el
-                                                    break
-                                            if tin_cay_btn: break
-
-                                        if tin_cay_btn:
-                                            driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth', block:'center'});", tin_cay_btn)
-                                            time.sleep(random.uniform(0.5, 1.2))
-                                            ActionChains(driver).move_to_element(tin_cay_btn).perform()
-                                            time.sleep(random.uniform(0.3, 0.8))
-                                            driver.execute_script("""
-                                                arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));
-                                            """, tin_cay_btn)
-                                            print(f"[Thread-{flow_type}] Đã click 'Tin cậy thiết bị này'!")
-                                        else:
-                                            print(f"[Thread-{flow_type}] Không tìm thấy nút 'Tin cậy thiết bị', bỏ qua.")
-
-                                        # Đợi URL về trang chủ (checkpoint_src=any hoặc facebook.com/)
-                                        print(f"[Thread-{flow_type}] Đang chờ về trang chủ sau xác thực...")
-                                        end_home = time.time() + 20
-                                        while time.time() < end_home:
-                                            time.sleep(1)
-                                            try:
-                                                home_url = driver.current_url or ""
-                                            except:
-                                                break
-                                            if ("checkpoint_src" in home_url
-                                                    or ("facebook.com" in home_url
-                                                        and "two" not in home_url
-                                                        and "login" not in home_url)):
-                                                print(f"[Thread-{flow_type}] ✅ Login 2FA hoàn tất! URL: {home_url}")
-                                                break
-                                else:
-                                    driver.execute_script("document.querySelector('form').submit();")
-                                    print(f"[Thread-{flow_type}] Fallback: submit form 2FA.")
-                                    time.sleep(8)
-                            else:
-                                print(f"[Thread-{flow_type}] Không tìm thấy ô nhập mã 2FA!")
-                        except ImportError:
-                            print(f"[Thread-{flow_type}] Thiếu thư viện pyotp! Chạy: pip install pyotp")
-                        except Exception as e2fa:
-                            print(f"[Thread-{flow_type}] Lỗi 2FA: {e2fa}")
-                    else:
-                        print(f"[Thread-{flow_type}] Trang 2FA nhưng không có secret key, bỏ qua.")
-                        time.sleep(5)
 
                 login_verified = verify_uid(driver, uid)
 
@@ -303,44 +161,6 @@ def run_account_flow(cookie_line, window_index):
         else:
             print(f"[Thread-{flow_type}] Không thể login, dừng luồng này.")
             return
-
-        # --- Kiểm tra modal "Nhớ mật khẩu" và click OK nếu có ---
-        print(f"[Thread-{flow_type}] Kiểm tra modal 'Nhớ mật khẩu'...")
-        try:
-            time.sleep(random.uniform(1.5, 3.0))
-            nho_mk_modal = driver.find_elements(By.XPATH,
-                "//h3[.//span[contains(normalize-space(), 'Nhớ mật khẩu') or contains(normalize-space(), 'Save password') or contains(normalize-space(), 'Remember password')]]"
-            )
-            if nho_mk_modal and any(el.is_displayed() for el in nho_mk_modal):
-                print(f"[Thread-{flow_type}] Phát hiện modal 'Nhớ mật khẩu', đang click OK...")
-                ok_btn = None
-                for xp in [
-                    "//div[@aria-label='OK'][@role='button']",
-                    "//div[@role='button'][.//span[normalize-space()='OK']]",
-                ]:
-                    els = driver.find_elements(By.XPATH, xp)
-                    for el in els:
-                        if el.is_displayed() and el.get_attribute('aria-disabled') != 'true':
-                            ok_btn = el
-                            break
-                    if ok_btn: break
-
-                if ok_btn:
-                    from selenium.webdriver.common.action_chains import ActionChains
-                    driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth', block:'center'});", ok_btn)
-                    time.sleep(random.uniform(0.5, 1.2))
-                    ActionChains(driver).move_to_element(ok_btn).perform()
-                    time.sleep(random.uniform(0.3, 0.8))
-                    driver.execute_script("""
-                        arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));
-                    """, ok_btn)
-                    print(f"[Thread-{flow_type}] Đã click OK 'Nhớ mật khẩu'!")
-                else:
-                    print(f"[Thread-{flow_type}] Không tìm thấy nút OK, bỏ qua modal.")
-            else:
-                print(f"[Thread-{flow_type}] Không có modal 'Nhớ mật khẩu'.")
-        except Exception as e_mk:
-            print(f"[Thread-{flow_type}] Lỗi kiểm tra modal mật khẩu: {e_mk}")
 
         print(f"[Thread-{flow_type}] Đã hoàn tất luồng tự động, giữ trình duyệt mở.")
         while True:
@@ -354,7 +174,7 @@ def run_account_flow(cookie_line, window_index):
 def main():
     # --- Dùng cứng Account được chỉ định ---
     lines = [
-        "61585156511244|aaassadasCNs|cookie_test|AFC3YONHIRABV3KPBX53QVYJEUHIR6KN"
+        "61579448764779|Viqutehu@2567|fr=1TyxyKtMelNYYBsQb.AWeCyjzsQsKm9Vg45bvWQNuwh9rVuugpbVH7Pdi5AVz2eS7sJbs.Bpuxk2..AAA.0.0.BqnlVi.AWf614IxIjbw7464cfGSOVD4bEs; ps_n=1; dpr=2.25; datr=KRm7aVlnR-VpTfv-lVmIDHWo; xs=33:P1qU3cl6ZvGgdA:2:1773869372:-1:-1; ps_l=1; wd=500x569; c_user=61579448764779; sb=5x6Yaq9Isq0O9Lx998sgyolW"
     ]
 
     print(f"[*] Chạy demo trực tiếp với dữ liệu cứng...")

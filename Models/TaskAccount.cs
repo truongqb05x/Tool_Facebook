@@ -19,7 +19,7 @@ namespace FPlusClone.Models
             set { if (_isSelected != value) { _isSelected = value; OnPropertyChanged(); } }
         }
 
-        private string _status = "Chờ chạy";
+        private string _status = "Live";
         public string Status
         {
             get => _status;

@@ -101,6 +101,7 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
         poll_interval = 1
         elapsed = 0
         success = False
+        two_fa_no_secret_count = 0  # Đếm số lần gặp 2FA mà không có fa2_secret
 
         from utils.helpers import is_checkpoint as check_checkpoint
         while elapsed < max_wait:
@@ -148,6 +149,20 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
             # Trang 2FA → nhập mã TOTP
             if is_two_step:
                 print(f"[{username}] Phát hiện trang 2FA!")
+                
+                # Kiểm tra lỗi modal "Invalid request"
+                try:
+                    invalid_request = driver.find_elements(By.XPATH, "//div[contains(text(), 'We could not validate your request') or contains(text(), 'Invalid request')]")
+                    if invalid_request and any(el.is_displayed() for el in invalid_request):
+                        print(f"[{username}] ❌ Phát hiện lỗi 'Invalid request' ở trang 2FA!")
+                        ok_btn = driver.find_elements(By.XPATH, "//div[@role='button'][.//span[normalize-space()='OK']]")
+                        if ok_btn and any(el.is_displayed() for el in ok_btn):
+                            try:
+                                _js_click(ok_btn[0])
+                            except: pass
+                        return "INVALID_REQUEST"
+                except Exception:
+                    pass
                 if fa2_secret:
                     try:
                         import pyotp
@@ -208,8 +223,13 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
                         print(f"[{username}] Thiếu thư viện pyotp! Chạy: pip install pyotp")
                     except Exception as e2fa:
                         print(f"[{username}] Lỗi xử lý 2FA: {e2fa}")
+                        return "INVALID_REQUEST"
                 else:
+                    two_fa_no_secret_count += 1
                     print(f"[{username}] Trang 2FA xuất hiện nhưng không có fa2_secret.")
+                    if two_fa_no_secret_count >= 2:
+                        print(f"[{username}] ❌ Tài khoản yêu cầu 2FA nhưng không có fa2_secret. Dừng login.")
+                        return False
                 continue  # tiếp tục poll sau khi xử lý 2FA
 
             is_checkpoint = check_checkpoint(driver)

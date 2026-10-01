@@ -59,8 +59,15 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
             print(f"[{uid}]  Tài khoản này đã bị chặn tính năng ở lượt chạy trước trong phiên này. Bỏ qua.")
             return "SKIPPED_BLOCKED"
 
-        cookie_str = "|".join(parts[2:]) if len(parts) > 2 else ""
-        
+        fa2_secret = ""
+        cookie_str = ""
+        for p in parts[2:]:
+            p = p.strip()
+            if "c_user=" in p or "sb=" in p or "datr=" in p or ";" in p:
+                cookie_str = p
+            elif p.isalnum() and len(p) >= 10:
+                fa2_secret = p
+                
         # Vị trí cửa sổ
         win_pos = get_window_pos(thread_index)
         
@@ -405,8 +412,12 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                     print(f"[{uid}] Lỗi khi check/đổi ngôn ngữ (profile đã login): {e_lang}")
     
             if not login_verified:
-                password = parts[1] if len(parts) > 1 else ""
-                if login_with_credentials(driver, uid, password):
+                password = parts[1].strip() if len(parts) > 1 else ""
+                login_result = login_with_credentials(driver, uid, password, fa2_secret=fa2_secret)
+                if login_result == "INVALID_REQUEST":
+                    print(f"[{uid}] ❌ Lỗi 'Invalid request' 2FA. Bỏ qua tài khoản này.")
+                    return "SKIPPED_BLOCKED"
+                elif login_result:
                     time.sleep(5)
                     if verify_uid(driver, uid):
                         login_verified = True

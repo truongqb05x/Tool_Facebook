@@ -112,6 +112,92 @@ namespace FPlusClone.ViewModels
             set { if (_isRandomClick != value) { _isRandomClick = value; OnPropertyChanged(); } }
         }
 
+        private bool _isAcceptFriend;
+        public bool IsAcceptFriend
+        {
+            get => _isAcceptFriend;
+            set { if (_isAcceptFriend != value) { _isAcceptFriend = value; OnPropertyChanged(); } }
+        }
+
+        private int _acceptFriendCount = 5;
+        public int AcceptFriendCount
+        {
+            get => _acceptFriendCount;
+            set { if (_acceptFriendCount != value) { _acceptFriendCount = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isUpStory;
+        public bool IsUpStory
+        {
+            get => _isUpStory;
+            set { if (_isUpStory != value) { _isUpStory = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isViewStory;
+        public bool IsViewStory
+        {
+            get => _isViewStory;
+            set { if (_isViewStory != value) { _isViewStory = value; OnPropertyChanged(); } }
+        }
+
+        // --- Reel Properties ---
+        private bool _isWatchReel;
+        public bool IsWatchReel
+        {
+            get => _isWatchReel;
+            set { if (_isWatchReel != value) { _isWatchReel = value; OnPropertyChanged(); } }
+        }
+
+        private int _reelTimeMin = 15;
+        public int ReelTimeMin
+        {
+            get => _reelTimeMin;
+            set { if (_reelTimeMin != value) { _reelTimeMin = value; OnPropertyChanged(); } }
+        }
+
+        private int _reelTimeMax = 30;
+        public int ReelTimeMax
+        {
+            get => _reelTimeMax;
+            set { if (_reelTimeMax != value) { _reelTimeMax = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isReelLike;
+        public bool IsReelLike
+        {
+            get => _isReelLike;
+            set { if (_isReelLike != value) { _isReelLike = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isReelSave;
+        public bool IsReelSave
+        {
+            get => _isReelSave;
+            set { if (_isReelSave != value) { _isReelSave = value; OnPropertyChanged(); } }
+        }
+
+        private bool _isReelShare;
+        public bool IsReelShare
+        {
+            get => _isReelShare;
+            set { if (_isReelShare != value) { _isReelShare = value; OnPropertyChanged(); } }
+        }
+
+        private int _reelDelayMin = 2;
+        public int ReelDelayMin
+        {
+            get => _reelDelayMin;
+            set { if (_reelDelayMin != value) { _reelDelayMin = value; OnPropertyChanged(); } }
+        }
+
+        private int _reelDelayMax = 5;
+        public int ReelDelayMax
+        {
+            get => _reelDelayMax;
+            set { if (_reelDelayMax != value) { _reelDelayMax = value; OnPropertyChanged(); } }
+        }
+
+
         private int _maxThreads = 1;
         public int MaxThreads
         {
@@ -210,6 +296,20 @@ namespace FPlusClone.ViewModels
                 IsChat = IsChat,
                 IsPost = IsPost,
                 IsRandomClick = IsRandomClick,
+                
+                IsAcceptFriend = IsAcceptFriend,
+                AcceptFriendCount = AcceptFriendCount,
+                IsUpStory = IsUpStory,
+                IsViewStory = IsViewStory,
+                
+                IsWatchReel = IsWatchReel,
+                ReelTimeMin = ReelTimeMin,
+                ReelTimeMax = ReelTimeMax,
+                IsReelLike = IsReelLike,
+                IsReelSave = IsReelSave,
+                IsReelShare = IsReelShare,
+                ReelDelayMin = ReelDelayMin,
+                ReelDelayMax = ReelDelayMax,
                 
                 IsRepeat = IsRepeat,
                 RepeatCount = RepeatCount,

@@ -19,5 +19,12 @@ namespace FPlusClone.Views.Tabs
                 }
             }
         }
+
+        private void BtnAdvancedSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsWindow = new FPlusClone.Views.SpamGroupSettingsWindow();
+            settingsWindow.DataContext = this.DataContext;
+            settingsWindow.ShowDialog();
+        }
     }
 }

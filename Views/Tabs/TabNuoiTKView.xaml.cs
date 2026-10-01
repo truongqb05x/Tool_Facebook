@@ -20,9 +20,10 @@ namespace FPlusClone.Views.Tabs
             }
         }
 
-        private void BtnPostSettings_Click(object sender, RoutedEventArgs e)
+        private void BtnAdvancedSettings_Click(object sender, RoutedEventArgs e)
         {
-            var settingsWindow = new PostSettingsWindow();
+            var settingsWindow = new FPlusClone.Views.NuoiTKSettingsWindow();
+            settingsWindow.DataContext = this.DataContext;
             settingsWindow.ShowDialog();
         }
     }

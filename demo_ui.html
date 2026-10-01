@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal UI Preview - Professional System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --surface-color: #ffffff;
+            --bg-color: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding-bottom: 50px;
+        }
+
+        /* Tùy chỉnh Modal chung */
+        .modal-content {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 70vh; /* Đảm bảo không tràn màn hình trên mobile */
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            background-color: #f8fafc;
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* Kích thước Modal tùy chỉnh */
+        .modal-xl-custom {
+            max-width: 1140px;
+        }
+        
+        .modal-lg-custom {
+            max-width: 900px;
+        }
+
+        /* Form Controls tinh gọn */
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Nút bấm */
+        .btn {
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        .btn-light {
+            background-color: #f1f5f9;
+            border-color: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        .btn-light:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* Các thành phần đặc biệt trong Modal (dựa trên ảnh) */
+        .setting-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+        .setting-label {
+            flex: 1;
+            padding-right: 2rem;
+        }
+        .setting-label h6 {
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .setting-label p {
+            margin-bottom: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .setting-control {
+            width: 200px;
+            flex-shrink: 0;
+        }
+        
+        /* Layout 2 cột cho Modal */
+        .two-col-layout {
+            display: flex;
+            gap: 2rem;
+        }
+        .two-col-sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--border-color);
+            padding-right: 1.5rem;
+        }
+        .two-col-main {
+            flex: 1;
+        }
+
+        /* Preview Cards */
+        .preview-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .preview-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+        }
+        .preview-card h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .preview-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            flex-grow: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .two-col-layout {
+                flex-direction: column;
+            }
+            .two-col-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding-right: 0;
+                padding-bottom: 1rem;
+            }
+            .setting-row {
+                flex-direction: column;
+            }
+            .setting-control {
+                width: 100%;
+                margin-top: 0.75rem;
+            }
+            .modal-body {
+                max-height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <!-- Tiêu đề trang -->
+    <div class="mb-5">
+        <h1 class="fw-bold fs-3">Modal UI Preview</h1>
+        <p class="text-muted">Thư viện các mẫu Modal dùng cho hệ thống quản trị. Thiết kế tối giản, rộng rãi và dễ tùy biến.</p>
+    </div>
+
+    <!-- Grid danh sách các mẫu Modal -->
+    <div class="row g-4">
+        
+        <!-- Card 1: Modal Cài đặt nâng cao (Dựa trên ảnh) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="preview-card">
+                <h5>Cài đặt nâng cao</h5>
+                <p>Modal form cấu hình chi tiết, chia nhỏ các mục thiết lập. Phù hợp cho trang Settings hệ thống.</p>
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalSettings">
+                    Mở Modal Cài đặt
+                </button>
+            </div>
+        </div>
+
+        <!-- Card 2: Modal Thông tin (Info) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="preview-card">
+                <h5>Modal Thông tin</h5>
+                <p>Hiển thị thông tin chi tiết, không có form nhập liệu. Thích hợp cho việc xem chi tiết User hoặc Log.</p>
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalInfo">
+                    Mở Modal Thông tin
+                </button>
+            </div>
+        </div>
+
+        <!-- Card 3: Modal Xác nhận (Confirm) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="preview-card">
+                <h5>Modal Xác nhận</h5>
+                <p>Modal nhỏ gọn dùng để xác nhận các hành động nguy hiểm (Xóa, Reset, Hủy).</p>
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalConfirm">
+                    Mở Modal Xác nhận
+                </button>
+            </div>
+        </div>
+
+        <!-- Card 4: Modal 2 Cột (Sidebar) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="preview-card">
+                <h5>Modal 2 Cột (Sidebar)</h5>
+                <p>Layout chia cột với sidebar điều hướng bên trái, nội dung chính bên phải. Phù hợp cho cài đặt phức tạp.</p>
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalTwoCol">
+                    Mở Modal 2 Cột
+                </button>
+            </div>
+        </div>
+
+        <!-- Card 5: Modal Gần Fullscreen -->
+        <div class="col-md-6 col-lg-4">
+            <div class="preview-card">
+                <h5>Modal Gần Fullscreen</h5>
+                <p>Kích thước tối đa (Extra Large), tận dụng tối đa không gian màn hình cho các bảng biểu dữ liệu lớn.</p>
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalFullscreen">
+                    Mở Modal Fullscreen
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 1: CÀI ĐẶT NÂNG CAO (Dựa trên ảnh) -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalSettings" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg-custom modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cài đặt nâng cao</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Số comment / tài khoản -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Số comment / tài khoản</h6>
+                        <p>Giới hạn tối đa</p>
+                    </div>
+                    <div class="setting-control">
+                        <input type="number" class="form-control" value="5">
+                    </div>
+                </div>
+
+                <!-- Delay chuyển đổi tài khoản -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Delay chuyển đổi tài khoản</h6>
+                        <p>Khoảng thời gian chờ (giây)</p>
+                    </div>
+                    <div class="setting-control d-flex align-items-center gap-2">
+                        <input type="number" class="form-control" value="5">
+                        <span class="text-muted">-</span>
+                        <input type="number" class="form-control" value="10">
+                    </div>
+                </div>
+
+                <!-- Nghỉ giữa comment -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Nghỉ giữa comment</h6>
+                        <p>Khoảng thời gian random</p>
+                    </div>
+                    <div class="setting-control d-flex align-items-center gap-2">
+                        <input type="number" class="form-control" value="15">
+                        <span class="text-muted">-</span>
+                        <input type="number" class="form-control" value="30">
+                    </div>
+                </div>
+
+                <!-- Lặp lại tiến trình -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Lặp lại tiến trình</h6>
+                        <p>Số vòng lặp</p>
+                    </div>
+                    <div class="setting-control d-flex align-items-center gap-2">
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" id="checkLoop">
+                        </div>
+                        <input type="number" class="form-control" value="1" disabled>
+                    </div>
+                </div>
+
+                <!-- Sửa comment sau đăng -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Sửa comment sau đăng</h6>
+                        <p>Chỉnh sửa nội dung để lách spam</p>
+                    </div>
+                    <div class="setting-control d-flex justify-content-end">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="checkEdit" checked>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Check phê duyệt -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Check phê duyệt</h6>
+                        <p>Kiểm tra trạng thái bình luận</p>
+                    </div>
+                    <div class="setting-control d-flex justify-content-end">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="checkApprove">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Số luồng chạy đồng thời -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Số luồng chạy đồng thời</h6>
+                        <p>Mở bao nhiêu tab cùng lúc</p>
+                    </div>
+                    <div class="setting-control">
+                        <input type="number" class="form-control" value="3">
+                    </div>
+                </div>
+
+                <!-- Reset DCOM lấy IP mới -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <h6>Reset DCOM lấy IP mới</h6>
+                        <p>Sau n lần (chỉ KiotProxy)</p>
+                    </div>
+                    <div class="setting-control d-flex align-items-center gap-2">
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" id="checkReset">
+                        </div>
+                        <input type="number" class="form-control" value="2" disabled>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">Xong</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 2: THÔNG TIN (INFO) -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalInfo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg-custom modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi tiết tài khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Tên đăng nhập</label>
+                        <p class="fw-medium">nguyenvana_dev</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Email</label>
+                        <p class="fw-medium">nguyenvana@example.com</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Vai trò</label>
+                        <p class="fw-medium"><span class="badge bg-primary bg-opacity-10 text-primary">Administrator</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Trạng thái</label>
+                        <p class="fw-medium"><span class="badge bg-success bg-opacity-10 text-success">Đang hoạt động</span></p>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted">Ghi chú</label>
+                        <p class="fw-medium">Tài khoản này được tạo tự động bởi hệ thống KiotProxy. Cần theo dõi lưu lượng truy cập hàng ngày.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary">Chỉnh sửa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 3: XÁC NHẬN (CONFIRM) -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalConfirm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 text-danger">
+                    <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                </div>
+                <h5 class="mb-2">Xác nhận xóa dữ liệu?</h5>
+                <p class="text-muted mb-0">Hành động này sẽ xóa vĩnh viễn tài khoản <strong>nguyenvana_dev</strong> và không thể hoàn tác.</p>
+            </div>
+            <div class="modal-footer justify-content-center border-0 pt-0">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">Xóa vĩnh viễn</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 4: 2 CỘT (SIDEBAR) -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalTwoCol" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl-custom modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cấu hình hệ thống</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="two-col-layout">
+                    <!-- Sidebar -->
+                    <div class="two-col-sidebar p-4 bg-light">
+                        <ul class="nav flex-column nav-pills gap-2">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="#"><i class="bi bi-sliders me-2"></i>Chung</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="#"><i class="bi bi-shield-lock me-2"></i>Bảo mật</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="#"><i class="bi bi-bell me-2"></i>Thông báo</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="#"><i class="bi bi-database me-2"></i>Dữ liệu</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Nội dung chính -->
+                    <div class="two-col-main p-4">
+                        <h6 class="mb-4 fw-bold">Cài đặt chung</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Tên hệ thống</label>
+                            <input type="text" class="form-control" value="KiotProxy Manager">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ngôn ngữ mặc định</label>
+                            <select class="form-select">
+                                <option>Tiếng Việt</option>
+                                <option>English</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Múi giờ</label>
+                            <select class="form-select">
+                                <option>(GMT+7) Bangkok, Hanoi, Jakarta</option>
+                                <option>(GMT+8) Singapore, Kuala Lumpur</option>
+                            </select>
+                        </div>
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                            <label class="form-check-label" for="maintenanceMode">Bật chế độ bảo trì</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 5: GẦN FULLSCREEN -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalFullscreen" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Danh sách người dùng (Fullscreen)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="bg-white p-4 rounded-3 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="fw-bold m-0">Quản lý thành viên</h6>
+                        <button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Thêm mới</button>
+                    </div>
+                    <!-- Giả lập bảng dữ liệu -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tên</th>
+                                    <th>Email</th>
+                                    <th>Vai trò</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>#001</td>
+                                    <td>Nguyễn Văn A</td>
+                                    <td>a.nguyen@example.com</td>
+                                    <td>Admin</td>
+                                    <td><span class="badge bg-success">Active</span></td>
+                                    <td><button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button></td>
+                                </tr>
+                                <tr>
+                                    <td>#002</td>
+                                    <td>Trần Thị B</td>
+                                    <td>b.tran@example.com</td>
+                                    <td>Editor</td>
+                                    <td><span class="badge bg-warning text-dark">Pending</span></td>
+                                    <td><button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button></td>
+                                </tr>
+                                <tr>
+                                    <td>#003</td>
+                                    <td>Lê Văn C</td>
+                                    <td>c.le@example.com</td>
+                                    <td>Viewer</td>
+                                    <td><span class="badge bg-secondary">Inactive</span></td>
+                                    <td><button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary">Xuất Excel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Xử lý logic nhỏ cho các checkbox trong Modal Cài đặt -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Logic cho checkbox "Lặp lại tiến trình"
+        const checkLoop = document.getElementById('checkLoop');
+        const inputLoop = checkLoop.closest('.setting-control').querySelector('input[type="number"]');
+        checkLoop.addEventListener('change', function() {
+            inputLoop.disabled = !this.checked;
+            if(!this.checked) inputLoop.value = 1;
+        });
+
+        // Logic cho checkbox "Reset DCOM"
+        const checkReset = document.getElementById('checkReset');
+        const inputReset = checkReset.closest('.setting-control').querySelector('input[type="number"]');
+        checkReset.addEventListener('change', function() {
+            inputReset.disabled = !this.checked;
+            if(!this.checked) inputReset.value = 2;
+        });
+    });
+</script>
+
+</body>
+</html>

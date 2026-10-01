@@ -37,6 +37,57 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         #print(f"[{uid}] MODE 3: Tiến hành nuôi tài khoản trong {warmup_time_sec} giây...")
         warm_up_account(driver, uid, warmup_time=warmup_time_sec, cfg=task_config)
         
+        # Gọi logic chấp nhận kết bạn
+        if task_config and task_config.get("IsAcceptFriend", False):
+            try:
+                from actions.utils.chapnhan_add import accept_friends
+                count = int(task_config.get("AcceptFriendCount", 5))
+                print(f"[{uid}] Chạy chức năng Chấp nhận kết bạn ({count} lời mời)...")
+                accept_friends(driver, uid, count)
+            except Exception as e:
+                print(f"[{uid}] Lỗi khi chạy Chấp nhận kết bạn: {e}")
+                
+        # Gọi logic up story
+        if task_config and task_config.get("IsUpStory", False):
+            try:
+                from actions.utils.story.up_story import up_story, can_up_story, record_story
+                allowed, reason = can_up_story(uid)
+                if not allowed:
+                    print(f"[{uid}] ⏭ Bỏ qua Đăng Story: {reason}")
+                else:
+                    print(f"[{uid}] Chạy chức năng Đăng Story...")
+                    success = up_story(driver, uid)
+                    if success:
+                        record_story(uid)
+            except Exception as e:
+                print(f"[{uid}] Lỗi khi chạy Đăng Story: {e}")
+                
+        # Gọi logic xem story
+        if task_config and task_config.get("IsViewStory", False):
+            try:
+                from actions.utils.story.view_story import view_story
+                print(f"[{uid}] Chạy chức năng Xem Story...")
+                view_story(driver, uid)
+            except Exception as e:
+                print(f"[{uid}] Lỗi khi chạy Xem Story: {e}")
+                
+        # Gọi logic xem Reels
+        if task_config and task_config.get("IsWatchReel", False):
+            try:
+                from actions.utils.reels import watch_reels
+                print(f"[{uid}] Chạy chức năng Xem Reels...")
+                reel_min = int(task_config.get("ReelTimeMin", 15))
+                reel_max = int(task_config.get("ReelTimeMax", 30))
+                is_like = bool(task_config.get("IsReelLike", False))
+                is_save = bool(task_config.get("IsReelSave", False))
+                is_share = bool(task_config.get("IsReelShare", False))
+                delay_min = int(task_config.get("ReelDelayMin", 2))
+                delay_max = int(task_config.get("ReelDelayMax", 5))
+                
+                watch_reels(driver, uid, reel_min, reel_max, is_like, is_save, is_share, delay_min, delay_max)
+            except Exception as e:
+                print(f"[{uid}] Lỗi khi chạy Xem Reels: {e}")
+        
         # Gọi logic đăng bài nếu UI có check IsPost
         if task_config and task_config.get("IsPost", False):
             #print(f"[{uid}] MODE 3: Bắt đầu chạy chức năng đăng bài tự động...")
@@ -527,14 +578,25 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             scanned_groups = get_joined_groups(driver, uid=uid)
             if scanned_groups == "LOGGED_OUT":
                 print(f"[{uid}]  Phát hiện tài khoản bị đăng xuất trong lúc quét nhóm! Thử đăng nhập lại...")
-                password = parts[1] if len(parts) > 1 else ""
-                if password and login_with_credentials(driver, uid, password):
-                    print(f"[{uid}]  Đăng nhập lại thành công! Quét lại nhóm...")
-                    scanned_groups = get_joined_groups(driver, uid=uid)
-                    if scanned_groups == "LOGGED_OUT":
-                        print(f"[{uid}]  Vẫn báo lỗi đăng xuất. Hủy account.")
+                password = parts[1].strip() if len(parts) > 1 else ""
+                fa2_secret = ""
+                for p in parts[2:]:
+                    p = p.strip()
+                    if not ("c_user=" in p or "sb=" in p or "datr=" in p or ";" in p) and p.isalnum() and len(p) >= 10:
+                        fa2_secret = p
+                if password:
+                    login_result = login_with_credentials(driver, uid, password, fa2_secret=fa2_secret)
+                    if login_result == "INVALID_REQUEST":
+                        print(f"[{uid}] ❌ Lỗi 'Invalid request' 2FA. Hủy account.")
                         is_dead = True
                         return False
+                    elif login_result:
+                        print(f"[{uid}]  Đăng nhập lại thành công! Quét lại nhóm...")
+                        scanned_groups = get_joined_groups(driver, uid=uid)
+                        if scanned_groups == "LOGGED_OUT":
+                            print(f"[{uid}]  Vẫn báo lỗi đăng xuất. Hủy account.")
+                            is_dead = True
+                            return False
                 else:
                     print(f"[{uid}]  Đăng nhập lại thất bại. Hủy account.")
                     is_dead = True
@@ -606,10 +668,21 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             
             if result == "LOGGED_OUT":
                 print(f"[{uid}]  Phát hiện tài khoản bị đăng xuất khi chuẩn bị comment! Thử đăng nhập lại...")
-                password = parts[1] if len(parts) > 1 else ""
-                if password and login_with_credentials(driver, uid, password):
-                    print(f"[{uid}]  Đăng nhập lại thành công! Thử lại group này...")
-                    continue
+                password = parts[1].strip() if len(parts) > 1 else ""
+                fa2_secret = ""
+                for p in parts[2:]:
+                    p = p.strip()
+                    if not ("c_user=" in p or "sb=" in p or "datr=" in p or ";" in p) and p.isalnum() and len(p) >= 10:
+                        fa2_secret = p
+                if password:
+                    login_result = login_with_credentials(driver, uid, password, fa2_secret=fa2_secret)
+                    if login_result == "INVALID_REQUEST":
+                        print(f"[{uid}] ❌ Lỗi 'Invalid request' 2FA. Hủy account.")
+                        is_dead = True
+                        return False
+                    elif login_result:
+                        print(f"[{uid}]  Đăng nhập lại thành công! Thử lại group này...")
+                        continue
                 else:
                     print(f"[{uid}]  Đăng nhập lại thất bại. Dừng account.")
                     is_dead = True

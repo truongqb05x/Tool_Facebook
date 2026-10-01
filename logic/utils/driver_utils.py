@@ -165,22 +165,28 @@ def build_chrome_options(user_data_dir=None, window_pos=None, user_agent=None):
 
     return chrome_options
 
+import threading
+_driver_path_lock = threading.Lock()
+_resolved_driver_path = None
+
 def get_service():
-    """Lấy Service object, ưu tiên path thủ công từ config nếu có"""
+    """Lấy Service object, ưu tiên path thủ công từ config nếu có. Có lock để tránh lỗi khi multi-thread."""
+    global _resolved_driver_path
+    
     manual_path = getattr(config, 'CHROMEDRIVER_PATH', None)
     if manual_path:
-        # Nếu là đường dẫn tương đối, ghép với thư mục gốc của tool
         if not os.path.isabs(manual_path):
             project_root = os.getcwd()
             manual_path = os.path.join(project_root, manual_path)
             
         if os.path.exists(manual_path):
-            # print(f"🚀 Sử dụng chromedriver thủ công: {manual_path}")
             return Service(executable_path=manual_path)
-        else:
-            pass # print(f"⚠️ Cảnh báo: File CHROMEDRIVER_PATH không tồn tại: {manual_path}")
             
-    return Service(ChromeDriverManager().install())
+    with _driver_path_lock:
+        if _resolved_driver_path is None:
+            _resolved_driver_path = ChromeDriverManager().install()
+            
+    return Service(executable_path=_resolved_driver_path)
 
 def create_driver(user_data_dir=None, proxy_config=None, window_pos=None, user_agent=None):
     """
