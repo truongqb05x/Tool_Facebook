@@ -8,7 +8,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0">
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
             <!-- Cảm xúc -->
             <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc" Padding="15" Margin="0,0,0,15">
                 <StackPanel>
@@ -38,6 +39,71 @@
                             <TextBlock Text="-" VerticalAlignment="Center" Margin="5,0"/>
                             <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
                                 <TextBox Text="{Binding DelayMax}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Tương tác Reel -->
+            <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc" Padding="15" Margin="0,0,0,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Tương tác thước phim (Reel)" FontSize="12" FontWeight="SemiBold"/>
+                            <TextBlock Text="Kích hoạt xem và tương tác Reel" FontSize="11" Foreground="#888"/>
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" IsChecked="{Binding IsWatchReel}" VerticalAlignment="Center">
+                            <CheckBox.LayoutTransform>
+                                <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
+                            </CheckBox.LayoutTransform>
+                        </CheckBox>
+                    </Grid>
+
+                    <Grid IsEnabled="{Binding IsWatchReel}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Thời gian xem (giây)" FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
+                                <TextBox Text="{Binding ReelTimeMin}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
+                            </Border>
+                            <TextBlock Text="-" VerticalAlignment="Center" Margin="5,0"/>
+                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
+                                <TextBox Text="{Binding ReelTimeMax}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <WrapPanel Margin="0,10,0,10" IsEnabled="{Binding IsWatchReel}">
+                        <CheckBox Content="👍 Like" IsChecked="{Binding IsReelLike}" Margin="0,0,15,5" VerticalAlignment="Center"/>
+                        <CheckBox Content="Lưu thước phim" IsChecked="{Binding IsReelSave}" Margin="0,0,15,5" VerticalAlignment="Center"/>
+                        <CheckBox Content="Chia sẻ thước phim" IsChecked="{Binding IsReelShare}" Margin="0,0,0,5" VerticalAlignment="Center"/>
+                    </WrapPanel>
+
+                    <Grid IsEnabled="{Binding IsWatchReel}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Delay thả cảm xúc/tương tác (giây)" FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
+                                <TextBox Text="{Binding ReelDelayMin}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
+                            </Border>
+                            <TextBlock Text="-" VerticalAlignment="Center" Margin="5,0"/>
+                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
+                                <TextBox Text="{Binding ReelDelayMax}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
                             </Border>
                         </StackPanel>
                     </Grid>
@@ -135,71 +201,6 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Tương tác Reel -->
-            <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc" Padding="15" Margin="0,0,0,12">
-                <StackPanel>
-                    <Grid Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Tương tác thước phim (Reel)" FontSize="12" FontWeight="SemiBold"/>
-                            <TextBlock Text="Kích hoạt xem và tương tác Reel" FontSize="11" Foreground="#888"/>
-                        </StackPanel>
-                        <CheckBox Grid.Column="1" IsChecked="{Binding IsWatchReel}" VerticalAlignment="Center">
-                            <CheckBox.LayoutTransform>
-                                <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
-                            </CheckBox.LayoutTransform>
-                        </CheckBox>
-                    </Grid>
-
-                    <Grid IsEnabled="{Binding IsWatchReel}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Thời gian xem (giây)" FontSize="12" FontWeight="SemiBold"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
-                                <TextBox Text="{Binding ReelTimeMin}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
-                            </Border>
-                            <TextBlock Text="-" VerticalAlignment="Center" Margin="5,0"/>
-                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
-                                <TextBox Text="{Binding ReelTimeMax}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
-                            </Border>
-                        </StackPanel>
-                    </Grid>
-
-                    <WrapPanel Margin="0,10,0,10" IsEnabled="{Binding IsWatchReel}">
-                        <CheckBox Content="👍 Like" IsChecked="{Binding IsReelLike}" Margin="0,0,15,5" VerticalAlignment="Center"/>
-                        <CheckBox Content="Lưu thước phim" IsChecked="{Binding IsReelSave}" Margin="0,0,15,5" VerticalAlignment="Center"/>
-                        <CheckBox Content="Chia sẻ thước phim" IsChecked="{Binding IsReelShare}" Margin="0,0,0,5" VerticalAlignment="Center"/>
-                    </WrapPanel>
-
-                    <Grid IsEnabled="{Binding IsWatchReel}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Delay thả cảm xúc/tương tác (giây)" FontSize="12" FontWeight="SemiBold"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
-                                <TextBox Text="{Binding ReelDelayMin}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
-                            </Border>
-                            <TextBlock Text="-" VerticalAlignment="Center" Margin="5,0"/>
-                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="40">
-                                <TextBox Text="{Binding ReelDelayMax}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
-                            </Border>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
             <!-- Up Story -->
             <Grid Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
@@ -209,6 +210,13 @@
                 <StackPanel>
                     <TextBlock Text="Đăng Story" FontSize="12" FontWeight="SemiBold"/>
                     <TextBlock Text="Tự động đăng story mới" FontSize="11" Foreground="#888"/>
+                    
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0" IsEnabled="{Binding IsUpStory}">
+                        <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="200" Margin="0,0,10,0">
+                            <TextBox Text="{Binding StoryFolderPath}" BorderThickness="0" Padding="5" VerticalContentAlignment="Center" Background="Transparent" ToolTip="Đường dẫn thư mục ảnh"/>
+                        </Border>
+                        <Button Content="Chọn thư mục" Click="BtnBrowseStoryFolder_Click" Width="90" Height="25" Background="#f4f5f7" BorderBrush="#dadce0" BorderThickness="1" Cursor="Hand"/>
+                    </StackPanel>
                 </StackPanel>
                 <CheckBox Grid.Column="1" IsChecked="{Binding IsUpStory}" VerticalAlignment="Center">
                     <CheckBox.LayoutTransform>
@@ -234,7 +242,8 @@
                 </CheckBox>
             </Grid>
 
-        </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
             <Button Content="Đóng" Width="80" Height="30" Background="#1a73e8" Foreground="White" BorderThickness="0" FontWeight="Bold" Cursor="Hand" Click="Close_Click"/>

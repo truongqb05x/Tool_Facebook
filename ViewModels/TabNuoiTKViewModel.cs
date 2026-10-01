@@ -133,6 +133,13 @@ namespace FPlusClone.ViewModels
             set { if (_isUpStory != value) { _isUpStory = value; OnPropertyChanged(); } }
         }
 
+        private string _storyFolderPath = "";
+        public string StoryFolderPath
+        {
+            get => _storyFolderPath;
+            set { if (_storyFolderPath != value) { _storyFolderPath = value; OnPropertyChanged(); } }
+        }
+
         private bool _isViewStory;
         public bool IsViewStory
         {
@@ -247,13 +254,102 @@ namespace FPlusClone.ViewModels
 
         public TabNuoiTKViewModel()
         {
+            LoadUIConfig();
             StartTaskCommand = new RelayCommand(_ => StartTask());
             StopTaskCommand = new RelayCommand(_ => StopTask());
+        }
+
+        private void SaveUIConfig()
+        {
+            var config = new System.Collections.Generic.Dictionary<string, object>
+            {
+                { "FeedTime", FeedTime },
+                { "IsEmotionLike", IsEmotionLike },
+                { "IsEmotionTym", IsEmotionTym },
+                { "IsEmotionThuong", IsEmotionThuong },
+                { "IsEmotionHaha", IsEmotionHaha },
+                { "IsEmotionWow", IsEmotionWow },
+                { "IsEmotionBuon", IsEmotionBuon },
+                { "IsEmotionPhanNo", IsEmotionPhanNo },
+                { "DelayMin", DelayMin },
+                { "DelayMax", DelayMax },
+                { "IsReadNoti", IsReadNoti },
+                { "ReadNotiCount", ReadNotiCount },
+                { "IsChat", IsChat },
+                { "IsPost", IsPost },
+                { "IsRandomClick", IsRandomClick },
+                { "IsAcceptFriend", IsAcceptFriend },
+                { "AcceptFriendCount", AcceptFriendCount },
+                { "IsUpStory", IsUpStory },
+                { "StoryFolderPath", StoryFolderPath },
+                { "IsViewStory", IsViewStory },
+                { "IsWatchReel", IsWatchReel },
+                { "ReelTimeMin", ReelTimeMin },
+                { "ReelTimeMax", ReelTimeMax },
+                { "IsReelLike", IsReelLike },
+                { "IsReelSave", IsReelSave },
+                { "IsReelShare", IsReelShare },
+                { "ReelDelayMin", ReelDelayMin },
+                { "ReelDelayMax", ReelDelayMax },
+                { "MaxThreads", MaxThreads },
+                { "IsResetDcom", IsResetDcom },
+                { "ResetDcomAfter", ResetDcomAfter }
+            };
+            string json = System.Text.Json.JsonSerializer.Serialize(config);
+            System.IO.File.WriteAllText("nuoitk_ui_settings.json", json);
+        }
+
+        private void LoadUIConfig()
+        {
+            try
+            {
+                if (System.IO.File.Exists("nuoitk_ui_settings.json"))
+                {
+                    string json = System.IO.File.ReadAllText("nuoitk_ui_settings.json");
+                    var config = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(json);
+                    if (config != null)
+                    {
+                        if (config.TryGetValue("FeedTime", out var v)) FeedTime = v.GetInt32();
+                        if (config.TryGetValue("IsEmotionLike", out v)) IsEmotionLike = v.GetBoolean();
+                        if (config.TryGetValue("IsEmotionTym", out v)) IsEmotionTym = v.GetBoolean();
+                        if (config.TryGetValue("IsEmotionThuong", out v)) IsEmotionThuong = v.GetBoolean();
+                        if (config.TryGetValue("IsEmotionHaha", out v)) IsEmotionHaha = v.GetBoolean();
+                        if (config.TryGetValue("IsEmotionWow", out v)) IsEmotionWow = v.GetBoolean();
+                        if (config.TryGetValue("IsEmotionBuon", out v)) IsEmotionBuon = v.GetBoolean();
+                        if (config.TryGetValue("IsEmotionPhanNo", out v)) IsEmotionPhanNo = v.GetBoolean();
+                        if (config.TryGetValue("DelayMin", out v)) DelayMin = v.GetInt32();
+                        if (config.TryGetValue("DelayMax", out v)) DelayMax = v.GetInt32();
+                        if (config.TryGetValue("IsReadNoti", out v)) IsReadNoti = v.GetBoolean();
+                        if (config.TryGetValue("ReadNotiCount", out v)) ReadNotiCount = v.GetInt32();
+                        if (config.TryGetValue("IsChat", out v)) IsChat = v.GetBoolean();
+                        if (config.TryGetValue("IsPost", out v)) IsPost = v.GetBoolean();
+                        if (config.TryGetValue("IsRandomClick", out v)) IsRandomClick = v.GetBoolean();
+                        if (config.TryGetValue("IsAcceptFriend", out v)) IsAcceptFriend = v.GetBoolean();
+                        if (config.TryGetValue("AcceptFriendCount", out v)) AcceptFriendCount = v.GetInt32();
+                        if (config.TryGetValue("IsUpStory", out v)) IsUpStory = v.GetBoolean();
+                        if (config.TryGetValue("StoryFolderPath", out v)) StoryFolderPath = v.GetString();
+                        if (config.TryGetValue("IsViewStory", out v)) IsViewStory = v.GetBoolean();
+                        if (config.TryGetValue("IsWatchReel", out v)) IsWatchReel = v.GetBoolean();
+                        if (config.TryGetValue("ReelTimeMin", out v)) ReelTimeMin = v.GetInt32();
+                        if (config.TryGetValue("ReelTimeMax", out v)) ReelTimeMax = v.GetInt32();
+                        if (config.TryGetValue("IsReelLike", out v)) IsReelLike = v.GetBoolean();
+                        if (config.TryGetValue("IsReelSave", out v)) IsReelSave = v.GetBoolean();
+                        if (config.TryGetValue("IsReelShare", out v)) IsReelShare = v.GetBoolean();
+                        if (config.TryGetValue("ReelDelayMin", out v)) ReelDelayMin = v.GetInt32();
+                        if (config.TryGetValue("ReelDelayMax", out v)) ReelDelayMax = v.GetInt32();
+                        if (config.TryGetValue("MaxThreads", out v)) MaxThreads = v.GetInt32();
+                        if (config.TryGetValue("IsResetDcom", out v)) IsResetDcom = v.GetBoolean();
+                        if (config.TryGetValue("ResetDcomAfter", out v)) ResetDcomAfter = v.GetInt32();
+                    }
+                }
+            }
+            catch { }
         }
 
         private void StartTask()
         {
             if (IsRunning) return;
+            SaveUIConfig();
 
             var selectedTaskAccounts = TaskAccounts.Where(t => t.IsSelected).ToList();
             var selectedUids = selectedTaskAccounts.Select(t => t.Account.Uid).ToList();
@@ -300,6 +396,7 @@ namespace FPlusClone.ViewModels
                 IsAcceptFriend = IsAcceptFriend,
                 AcceptFriendCount = AcceptFriendCount,
                 IsUpStory = IsUpStory,
+                StoryFolderPath = StoryFolderPath,
                 IsViewStory = IsViewStory,
                 
                 IsWatchReel = IsWatchReel,

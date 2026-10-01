@@ -28,7 +28,8 @@ def read_one_random_notification(driver, uid):
             btn_el = wait.until(EC.element_to_be_clickable((By.XPATH, fallback_xpath)))
             driver.execute_script("arguments[0].click();", btn_el)
         except Exception as ex:
-            print(f"[{uid}] [-] Không thể mở bảng thông báo: {ex}")
+            err_msg = str(ex).split('\n')[0] if str(ex) else "Lỗi không xác định"
+            print(f"[{uid}] [-] Không thể mở bảng thông báo: {err_msg}")
             return
 
     try:

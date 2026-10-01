@@ -54,7 +54,7 @@ def record_story(uid: str):
     _save_history(history)
 
 
-def up_story(driver, uid, image_path=None):
+def up_story(driver, uid, image_path=None, image_folder=None):
     try:
         print(f"[{uid}] Đang tìm nút Tạo tin...")
         driver.get("https://www.facebook.com/")
@@ -81,7 +81,11 @@ def up_story(driver, uid, image_path=None):
         if not image_path:
             import glob
             # Lấy ngẫu nhiên ảnh trong thư mục img
-            img_dir = os.path.join(os.getcwd(), "resources", "images")
+            if image_folder and os.path.exists(image_folder):
+                img_dir = image_folder
+            else:
+                img_dir = os.path.join(os.getcwd(), "resources", "images")
+                
             if not os.path.exists(img_dir):
                 print(f"[{uid}] Không tìm thấy thư mục ảnh {img_dir}. Bỏ qua up story.")
                 return False

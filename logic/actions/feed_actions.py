@@ -4,8 +4,8 @@ import random
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from actions.utils.like_actions import random_like_post
-from actions.utils.read_notifications import read_one_random_notification
-from actions.utils.chat_two_ways import run_two_way_chat
+from actions.warmup_tasks import execute_warmup_task
+
 
 def warm_up_account(driver, uid, warmup_time=None, cfg=None):
     if warmup_time is None:
@@ -38,24 +38,61 @@ def warm_up_account(driver, uid, warmup_time=None, cfg=None):
         is_chat = False
         is_random_click = True
 
+    pending_tasks = []
     if is_read_noti:
-        print(f"[{uid}]  Bắt đầu đọc {read_noti_count} thông báo...")
         for _ in range(read_noti_count):
-            read_one_random_notification(driver, uid)
-            time.sleep(random.uniform(2, 5))
-
+            pending_tasks.append("read_noti")
     if is_chat:
-        print(f"[{uid}]  Bắt đầu mở hộp thoại chat...")
-        run_two_way_chat(driver, uid, task_config=cfg)
-        time.sleep(3)
+        pending_tasks.append("chat")
+    if cfg:
+        if cfg.get("IsAcceptFriend", False):
+            count = int(cfg.get("AcceptFriendCount", 5))
+            for _ in range(count):
+                pending_tasks.append("accept_friend")
+        if cfg.get("IsUpStory", False):
+            pending_tasks.append("up_story")
+        if cfg.get("IsViewStory", False):
+            pending_tasks.append("view_story")
+        if cfg.get("IsWatchReel", False):
+            pending_tasks.append("watch_reel")
+        if cfg.get("IsPost", False):
+            pending_tasks.append("post")
+            
+    random.shuffle(pending_tasks)
+    
+    # Tạo các mốc thời gian ngẫu nhiên để thực hiện task
+    task_times = []
+    if pending_tasks:
+        for _ in range(len(pending_tasks)):
+            # Chọn một thời điểm ngẫu nhiên trong khoảng từ giây thứ 10 đến sát giờ kết thúc
+            trigger = start_time + random.uniform(10, max(11, warmup_time - 10))
+            task_times.append(trigger)
+        task_times.sort(reverse=True) # Sắp xếp giảm dần để dùng pop() lấy mốc thời gian gần nhất
 
     # Ưu tiên News Feed để có nhiều link tương tác
     url = "https://www.facebook.com/"
-    driver.get(url)
+    try:
+        driver.get(url)
+    except Exception as e:
+        err_msg = str(e).split('\n')[0] if str(e) else "Lỗi không xác định"
+        print(f"[{uid}] [-] Lỗi tải trang chủ: {err_msg}")
     
     while (time.time() - start_time) < warmup_time:
+        if task_times and time.time() > task_times[-1]:
+            task_to_run = pending_tasks.pop()
+            task_times.pop()
+            execute_warmup_task(task_to_run, driver, uid, cfg)
+            
+            # Quay lại Feed để tiếp tục lướt sau khi thực hiện xong task
+            try:
+                driver.get(url)
+                time.sleep(3)
+            except: pass
         scroll_amount = random.randint(400, 800)
-        driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+        try:
+            driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+        except Exception:
+            pass
         time.sleep(random.uniform(4, 9))
         
         # Ngẫu nhiên mở link (khoảng 20% cơ hội mỗi lần cuộn)
@@ -114,15 +151,11 @@ def warm_up_account(driver, uid, warmup_time=None, cfg=None):
                 pass
         
         # Logic like bài viết
-        if is_like_post:
-            # Ngẫu nhiên thả cảm xúc theo cấu hình (tỷ lệ 15% mỗi lần cuộn)
-            if random.random() < 0.15:
-                delay = random.uniform(reaction_delay_min, reaction_delay_max)
-                time.sleep(delay)
-                random_like_post(driver, uid, allowed_reactions=allowed_reactions)
-        else:
-            # Ngẫu nhiên thả cảm xúc mặc định (Giảm xuống còn khoảng 5% cơ hội mỗi lần cuộn để tránh spam Like)
-            if random.random() < 0.05:
-                random_like_post(driver, uid)
+        if is_like_post and 'next_like_time' not in locals():
+            next_like_time = time.time() + random.uniform(reaction_delay_min, reaction_delay_max)
+            
+        if is_like_post and time.time() > next_like_time:
+            random_like_post(driver, uid, allowed_reactions=allowed_reactions)
+            next_like_time = time.time() + random.uniform(reaction_delay_min, reaction_delay_max)
 
     print(f"[{uid}] ✅ Hoàn thành warm-up.")
