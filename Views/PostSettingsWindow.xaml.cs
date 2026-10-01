@@ -12,11 +12,10 @@ namespace FPlusClone.Views
 
         private void BtnBrowseImage_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png) | *.jpg; *.jpeg; *.png";
-            if (openFileDialog.ShowDialog() == true)
+            Microsoft.Win32.OpenFolderDialog openFolderDialog = new Microsoft.Win32.OpenFolderDialog();
+            if (openFolderDialog.ShowDialog() == true)
             {
-                TxtImagePath.Text = openFileDialog.FileName;
+                TxtImagePath.Text = openFolderDialog.FolderName;
             }
         }
 

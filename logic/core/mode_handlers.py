@@ -69,7 +69,14 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                                 lines = [l.strip() for l in f if l.strip()]
                                 if lines: content = random.choice(lines)
                         except: pass
-                    if not img_path or not os.path.exists(img_path):
+                    if img_path and os.path.isdir(img_path):
+                        valid_exts = ('.png', '.jpg', '.jpeg')
+                        valid_images = [os.path.join(img_path, f) for f in os.listdir(img_path) if f.lower().endswith(valid_exts)]
+                        if valid_images:
+                            img_path = random.choice(valid_images)
+                        else:
+                            img_path = None
+                    elif not img_path or not os.path.exists(img_path):
                         img_path = None
                     
                     post_manual_content(driver, uid, post_content=content, image_path=img_path, is_feeling=is_feeling, is_checkin=is_checkin, is_tag=is_tag)
@@ -77,8 +84,44 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
                     print(f"[{uid}] Lấy bài viết ngẫu nhiên từ API Graph...")
                     target_uids = ["100044408347036", "100044255598168", "100012078365894"]
                     target_uid = random.choice(target_uids)
-                    access_token = "EAAAAUaZA8jlABQ7IWv8yBHIu1AnOHE8Wt4XqrACtZAKm0EERw8rcXoVIs2VQ2obfE98kpawmClywgMJzjEyJIYslODXFvAmr5v0ELBKs8Q6vMMX8dVgxpARgOPhPKzHkkKZAeGYpE2y8gNyStB1vWbwh2chje8H3CnNIAk8IXszu4LOEPZA4lMZAFvU1TEZBbz2PcX00EZCzwZDZD"
-                    post_data = get_random_post(target_uid, access_token)
+                    
+                    accounts_path = os.path.join(os.getcwd(), "accounts.json")
+                    accounts_data = None
+                    valid_tokens = []
+                    try:
+                        with open(accounts_path, 'r', encoding='utf-8') as f:
+                            accounts_data = json.load(f)
+                            for acc in accounts_data.get("Accounts", []):
+                                t = acc.get("Token", "").strip()
+                                if t:
+                                    valid_tokens.append(acc)
+                    except:
+                        pass
+                    
+                    post_data = None
+                    fallback_token = "EAAAAUaZA8jlABQ7IWv8yBHIu1AnOHE8Wt4XqrACtZAKm0EERw8rcXoVIs2VQ2obfE98kpawmClywgMJzjEyJIYslODXFvAmr5v0ELBKs8Q6vMMX8dVgxpARgOPhPKzHkkKZAeGYpE2y8gNyStB1vWbwh2chje8H3CnNIAk8IXszu4LOEPZA4lMZAFvU1TEZBbz2PcX00EZCzwZDZD"
+                    
+                    if not valid_tokens:
+                        print(f"[{uid}] Không tìm thấy Token nào trong danh sách tài khoản, dùng token mặc định...")
+                        post_data = get_random_post(target_uid, fallback_token)
+                    else:
+                        random.shuffle(valid_tokens)
+                        for acc_obj in list(valid_tokens):
+                            access_token = acc_obj.get("Token", "")
+                            print(f"[{uid}] Thử lấy bài bằng Token của UID: {acc_obj.get('Uid')}")
+                            post_data = get_random_post(target_uid, access_token)
+                            if post_data:
+                                print(f"[{uid}] Token hợp lệ!")
+                                break
+                            else:
+                                print(f"[{uid}] Token lỗi, tiến hành xóa token này...")
+                                acc_obj["Token"] = ""
+                                try:
+                                    with open(accounts_path, 'w', encoding='utf-8') as fw:
+                                        json.dump(accounts_data, fw, ensure_ascii=False, indent=2)
+                                except Exception as e:
+                                    print(f"[{uid}] Lỗi khi cập nhật accounts.json: {e}")
+                    
                     if post_data:
                         print(f"[{uid}] Bài viết lấy được từ API: {post_data['message'][:30]}...")
                         post_manual_content(driver, uid, post_content=post_data["message"], image_path=post_data["image_path"], is_feeling=is_feeling, is_checkin=is_checkin, is_tag=is_tag)

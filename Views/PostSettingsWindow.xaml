@@ -21,7 +21,7 @@
                         <RadioButton x:Name="RbManual" Content="Chế độ thủ công" IsChecked="True" FontWeight="SemiBold" Margin="0,0,0,10"/>
                         <Border Margin="20,0,0,15" IsEnabled="{Binding IsChecked, ElementName=RbManual}">
                             <StackPanel>
-                                <TextBlock Text="File ảnh:" Margin="0,0,0,5"/>
+                                <TextBlock Text="Folder ảnh:" Margin="0,0,0,5"/>
                                 <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>

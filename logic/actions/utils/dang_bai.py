@@ -216,7 +216,6 @@ def post_manual_content(driver, uid, post_content=None, image_path=None, is_feel
                         # Fallback về hàm do_click nếu JS click không thành công
                         do_click(camxuc_xpath, ["cảm xúc", "feeling"])
                         
-                    import random
                     time.sleep(random.uniform(2.0, 3.5))
                     
                     # Chọn random cảm xúc
@@ -273,7 +272,13 @@ def post_manual_content(driver, uid, post_content=None, image_path=None, is_feel
                         
                         active_el = driver.switch_to.active_element
                         for char in content:
-                            active_el.send_keys(char)
+                            try:
+                                active_el.send_keys(char)
+                            except Exception as char_ex:
+                                if "BMP" in str(char_ex):
+                                    driver.execute_script("document.execCommand('insertText', false, arguments[0]);", char)
+                                else:
+                                    raise char_ex
                             time.sleep(random.uniform(0.02, 0.1))
                             
                     except Exception as e:
@@ -282,7 +287,13 @@ def post_manual_content(driver, uid, post_content=None, image_path=None, is_feel
                         driver.execute_script("arguments[0].click();", tb)
                         time.sleep(0.5)
                         for char in content:
-                            tb.send_keys(char)
+                            try:
+                                tb.send_keys(char)
+                            except Exception as char_ex:
+                                if "BMP" in str(char_ex):
+                                    driver.execute_script("document.execCommand('insertText', false, arguments[0]);", char)
+                                else:
+                                    raise char_ex
                             time.sleep(random.uniform(0.02, 0.1))
                             
                     time.sleep(2)
@@ -291,9 +302,11 @@ def post_manual_content(driver, uid, post_content=None, image_path=None, is_feel
                 
                 react_click_script = """
                 var el = arguments[0];
-                el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-                el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
-                el.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+                ['mousedown', 'mouseup', 'click'].forEach(function(eventType) {
+                    el.dispatchEvent(new MouseEvent(eventType, {
+                        view: window, bubbles: true, cancelable: true, buttons: 1
+                    }));
+                });
                 """
 
                 # Hàm mở rộng menu 3 chấm
@@ -440,9 +453,78 @@ def post_manual_content(driver, uid, post_content=None, image_path=None, is_feel
                 time.sleep(random.uniform(2.0, 4.0))
                 
                 print(f"[Account-{uid}] Đang tìm và nhấn nút 'Đăng' (Post)...")
-                dang_xpath = "//div[@aria-label='Đăng' or @aria-label='Post'][@role='button'] | //div[@role='button']//span[translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='đăng' or translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='post']"
-                do_click(dang_xpath, ["đăng", "post"])
-                print(f"[Account-{uid}] Đã gửi lệnh click Đăng bài thành công!")
+                
+                dang_xpaths = [
+                    "//div[@role='dialog']//div[@aria-label='Đăng' or @aria-label='Post'][@role='button']",
+                    "//div[@aria-label='Đăng' or @aria-label='Post'][@role='button']",
+                    "//div[@role='dialog']//div[@role='button'][.//span[translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='đăng' or translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='post']]",
+                    "//div[@role='button'][.//span[translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='đăng' or translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='post']]",
+                    "//span[translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='đăng' or translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='post']",
+                    "//div[contains(@aria-label, 'Đăng') or contains(@aria-label, 'Post')][@role='button']"
+                ]
+                
+                clicked_dang = False
+                for try_idx in range(5):  # Thử tối đa 5 vòng, mỗi vòng chờ 1-2s (để chờ ảnh load xong)
+                    if clicked_dang: break
+                    for xp in dang_xpaths:
+                        if clicked_dang: break
+                        try:
+                            els = driver.find_elements(By.XPATH, xp)
+                            for el in els:
+                                if el.is_displayed():
+                                    if str(el.get_attribute("aria-disabled")).lower() == "true":
+                                        print(f"[Account-{uid}] Nút Đăng đang bị disable (có thể ảnh đang load), chờ thêm...")
+                                        continue
+                                        
+                                    try:
+                                        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+                                        time.sleep(0.5)
+                                    except: pass
+                                    
+                                    # Thử 1: Click Selenium thông thường
+                                    try:
+                                        el.click()
+                                        clicked_dang = True
+                                        print(f"[Account-{uid}] Đã click Đăng bài thành công (Selenium click)!")
+                                        break
+                                    except: pass
+                                    
+                                    # Tìm thẻ span bên trong để click nếu div bị chặn
+                                    try:
+                                        inner_span = el.find_element(By.XPATH, ".//span[translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='đăng' or translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='post']")
+                                        driver.execute_script(react_click_script, inner_span)
+                                        clicked_dang = True
+                                        print(f"[Account-{uid}] Đã click Đăng bài thành công (JS inner_span MouseEvent)!")
+                                        break
+                                    except: pass
+
+                                    # Thử 2: Click bằng JS (dispatchEvent) để vượt qua React
+                                    try:
+                                        driver.execute_script(react_click_script, el)
+                                        clicked_dang = True
+                                        print(f"[Account-{uid}] Đã click Đăng bài thành công (JS MouseEvent)!")
+                                        break
+                                    except: pass
+                                    
+                                    # Thử 3: Click bằng JS thuần
+                                    try:
+                                        driver.execute_script("arguments[0].click();", el)
+                                        clicked_dang = True
+                                        print(f"[Account-{uid}] Đã click Đăng bài thành công (JS click thuần)!")
+                                        break
+                                    except: pass
+                        except Exception:
+                            pass
+                    
+                    if not clicked_dang:
+                        print(f"[Account-{uid}] Chưa ấn được Đăng (lần {try_idx+1}/5), chờ 2s rồi thử lại...")
+                        time.sleep(2)
+                
+                if not clicked_dang:
+                    print(f"[Account-{uid}] Thử fallback dùng hàm do_click để nhấn Đăng...")
+                    do_click(" | ".join(dang_xpaths), ["đăng", "post"])
+                
+                print(f"[Account-{uid}] Đã hoàn tất gửi lệnh click Đăng bài!")
                 
                 wait_time = random.uniform(10, 15)
                 print(f"[Account-{uid}] Đang đợi {wait_time:.1f} giây để hoàn tất quá trình đăng bài...")
@@ -456,3 +538,11 @@ def post_manual_content(driver, uid, post_content=None, image_path=None, is_feel
             if time.time() >= end_time_popup:
                 print(f"[Account-{uid}] Quá 60s không thấy khung đăng bài hay popup nào. Bỏ qua.")
                 break
+
+    # Dọn dẹp ảnh tạm sau khi kết thúc hành động đăng bài
+    if image_path and os.path.exists(image_path):
+        try:
+            os.remove(image_path)
+            print(f"[Account-{uid}] Đã dọn dẹp ảnh tạm: {image_path}")
+        except Exception as e:
+            print(f"[Account-{uid}] Lỗi khi xóa ảnh tạm: {e}")
