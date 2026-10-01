@@ -608,8 +608,13 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             print(f"[{uid}]  Nghỉ giải lao {break_time}s...")
             time.sleep(break_time)
         else:
-            print(f"[{uid}]  Nghỉ 10s...")
-            time.sleep(10)
+            delay_min = task_config.get("DelayMin", 10) if task_config else 10
+            delay_max = task_config.get("DelayMax", 10) if task_config else 10
+            if delay_max < delay_min:
+                delay_max = delay_min
+            delay = random.randint(delay_min, delay_max)
+            print(f"[{uid}]  Nghỉ {delay}s...")
+            time.sleep(delay)
             
     # ACTION SAU KHI HOÀN THÀNH TẤT CẢ POST (HOẶC HẾT GROUP)
     if execution_mode == 1 and task_config and task_config.get("ActionAfterPost"):

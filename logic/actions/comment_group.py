@@ -118,27 +118,47 @@ def check_comment_status_after_post(driver, uid):
         print(f"[{uid}] ⚠️ Lỗi khi xử lý modal thành viên: {e}")
 
     # 3. Kiểm tra nút Chỉnh sửa (comment được duyệt hay bị từ chối)
-    time.sleep(random.uniform(10, 30))
     try:
         menu_xpath = "//div[@aria-label='Chỉnh sửa hoặc xóa bình luận này' or @aria-label='Edit or delete this comment' or @aria-label='Edit or delete this']"
-        menu_btns = driver.find_elements(By.XPATH, menu_xpath)
+        menu_btns = []
+        timeout = 60
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            menu_btns = driver.find_elements(By.XPATH, menu_xpath)
+            if menu_btns:
+                break
+            time.sleep(2)
+
         if menu_btns:
             menu_btn = menu_btns[-1]
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", menu_btn)
             time.sleep(1)
-            ActionChains(driver).move_to_element(menu_btn).perform()
-            time.sleep(1)
-            menu_btn.click()
-            time.sleep(2)
-            edit_opts = driver.find_elements(By.XPATH, "//span[contains(text(), 'Chỉnh sửa') or contains(text(), 'Edit')]")
+            
+            edit_opts = []
+            for attempt in range(3):
+                try:
+                    ActionChains(driver).move_to_element(menu_btn).perform()
+                    time.sleep(1)
+                    menu_btn.click()
+                except Exception as click_err:
+                    print(f"[{uid}] ⚠️ Lỗi click bình thường, dùng js click: {click_err}")
+                    driver.execute_script("arguments[0].click();", menu_btn)
+                
+                time.sleep(2)
+                edit_opts = driver.find_elements(By.XPATH, "//span[contains(text(), 'Chỉnh sửa') or contains(text(), 'Edit')]")
+                if edit_opts:
+                    break
+                print(f"[{uid}] ⚠️ Chưa thấy tùy chọn 'Chỉnh sửa' (thử lại {attempt + 1}/3)...")
+                time.sleep(2)
+                
             if not edit_opts:
-                print(f"[{uid}] ❌ Không có tùy chọn 'Chỉnh sửa'. Comment có thể đã bị từ chối hoặc đang chờ duyệt.")
+                print(f"[{uid}] ❌ Không có tùy chọn 'Chỉnh sửa' sau 3 lần click. Comment có thể đã bị từ chối hoặc đang chờ duyệt.")
                 return "BLOCK_EDIT_DETECTED"
             else:
                 ActionChains(driver).send_keys(Keys.ESCAPE).perform()
                 time.sleep(1)
         else:
-            print(f"[{uid}] ⚠️ Không tìm thấy nút menu của comment. Có thể đã bị từ chối/chờ duyệt.")
+            print(f"[{uid}] ⚠️ Không tìm thấy nút menu của comment sau {timeout}s. Có thể đã bị từ chối/chờ duyệt.")
             return "BLOCK_EDIT_DETECTED"
     except Exception as e:
         print(f"[{uid}] ⚠️ Lỗi khi kiểm tra nút Chỉnh sửa: {e}")
@@ -457,6 +477,15 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             delay2 = random.randint(3, 5)
                             time.sleep(delay2)
                             
+                            # Kiểm tra URL xem có bị văng ra trang chủ không
+                            current_url_check = driver.current_url.strip().rstrip('/')
+                            if current_url_check in ("https://www.facebook.com", "https://facebook.com"):
+                                print(f"[{uid}] ⚠️ Bị văng ra trang chủ, tiến hành vào lại group {g_id} và lặp lại logic...")
+                                driver.get(target_url)
+                                time.sleep(5)
+                                break  # Thoát vòng lặp tìm bài viết (scan_idx) để bắt đầu attempt mới
+                                
+
                             comment_input = box_to_comment
                                 
                             try:
@@ -872,9 +901,12 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                     time.sleep(1)
                     box.send_keys(Keys.ENTER)
                     print(f"[{uid}] ✅ Đã sửa comment thành công.")
-                    time.sleep(3)
+                    time.sleep(10)
                 except Exception as e_edit:
                     print(f"[{uid}] ⚠️ Lỗi quy trình sửa comment: {e_edit}")
+            else:
+                print(f"[{uid}] ⏳ Đợi 10s trước khi kết thúc quá trình...")
+                time.sleep(10)
             # ===========================================================
             return True # THÀNH CÔNG
 

@@ -524,6 +524,8 @@ namespace FPlusClone.ViewModels
                 ConfigBeforePost = ConfigBeforePost,
                 ActionAfterPost = ActionAfterPost,
                 ConfigAfterPost = ConfigAfterPost,
+                DelayMin = DelayMin,
+                DelayMax = DelayMax,
                 DelayAccountMin = DelayAccountMin,
                 DelayAccountMax = DelayAccountMax,
 
