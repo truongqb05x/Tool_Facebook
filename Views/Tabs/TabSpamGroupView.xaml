@@ -174,7 +174,7 @@
                                 </Border>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2">
+                            <StackPanel Grid.Column="2" IsEnabled="{Binding IsTextComment}">
                                 <Grid Margin="0,0,0,6">
                                     <TextBlock Text="Nội dung comment riêng theo Group" FontSize="12" FontWeight="SemiBold" Foreground="#555" VerticalAlignment="Center"/>
                                     <Button Content="Thêm" Command="{Binding AddCustomGroupCommentCommand}" HorizontalAlignment="Right" Background="#1a73e8" Foreground="White" BorderThickness="0" Padding="15,0" Cursor="Hand" Height="28"/>

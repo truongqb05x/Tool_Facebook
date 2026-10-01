@@ -13,11 +13,11 @@
         <TextBlock Grid.Row="0" Text="Chọn các tài khoản muốn sử dụng cho tiến trình này:" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333"/>
         
         <DockPanel Grid.Row="1" Margin="0,0,0,10">
-            <TextBlock Text="Thư mục:" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#555" FontWeight="SemiBold"/>
-            <ComboBox ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}" Height="30" Width="150" HorizontalAlignment="Left" Background="#f8f9fa" BorderBrush="#dadce0" Padding="5,0" Margin="0,0,15,0"/>
-            <TextBlock Text="Tìm UID:" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#555" FontWeight="SemiBold"/>
-            <TextBox Text="{Binding SearchUid, UpdateSourceTrigger=PropertyChanged}" Height="30" Width="150" Padding="5,0,0,0" VerticalContentAlignment="Center" Background="#fff" BorderBrush="#dadce0"/>
-            <Button Content="Chọn tất cả" Command="{Binding SelectAllCommand}" DockPanel.Dock="Right" HorizontalAlignment="Right" Background="#f8f9fa" BorderBrush="#ccc" Padding="10,5" Cursor="Hand" FontWeight="Bold" Foreground="#1a73e8"/>
+            <TextBlock Text="Thư mục:" VerticalAlignment="Top" Margin="0,5,10,0" Foreground="#555" FontWeight="SemiBold"/>
+            <ComboBox ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}" Height="30" VerticalAlignment="Top" Width="150" HorizontalAlignment="Left" Background="#f8f9fa" BorderBrush="#dadce0" Padding="5,0" Margin="0,0,15,0"/>
+            <TextBlock Text="Tìm UID:" VerticalAlignment="Top" Margin="0,5,10,0" Foreground="#555" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding SearchUid, UpdateSourceTrigger=PropertyChanged}" Height="60" Width="150" Padding="5" VerticalContentAlignment="Top" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Background="#fff" BorderBrush="#dadce0"/>
+            <Button Content="Chọn tất cả" Command="{Binding SelectAllCommand}" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#f8f9fa" BorderBrush="#ccc" Padding="10,5" Cursor="Hand" FontWeight="Bold" Foreground="#1a73e8"/>
         </DockPanel>
 
         <DataGrid x:Name="accountGrid" Grid.Row="2" ItemsSource="{Binding ItemsView}" AutoGenerateColumns="False" 

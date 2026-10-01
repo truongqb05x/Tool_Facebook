@@ -89,7 +89,28 @@ namespace FPlusClone.Views
             if (obj is FacebookAccount acc)
             {
                 if (SelectedFolder != "All" && acc.Folder != SelectedFolder) return false;
-                if (!string.IsNullOrEmpty(SearchUid) && !(acc.Uid?.Contains(SearchUid) ?? false)) return false;
+                
+                if (!string.IsNullOrEmpty(SearchUid))
+                {
+                    var searchLines = SearchUid.Split(new[] { '\r', '\n', ',', ';' }, System.StringSplitOptions.RemoveEmptyEntries)
+                                               .Select(l => l.Trim())
+                                               .Where(l => !string.IsNullOrEmpty(l))
+                                               .ToList();
+                    if (searchLines.Count > 0)
+                    {
+                        bool match = false;
+                        foreach (var line in searchLines)
+                        {
+                            if (acc.Uid?.Contains(line) ?? false)
+                            {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                }
+                
                 return true;
             }
             return false;

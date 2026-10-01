@@ -166,7 +166,6 @@ import shutil
 import json
 from config import config
 from utils.locks import FILE_LOCK
-from utils.account_registry import load_proxy_mapping, save_proxy_mapping
 
 def get_global_profile_dir_from_settings():
     curr = os.getcwd()

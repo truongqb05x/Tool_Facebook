@@ -304,16 +304,22 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
             if task_config:
                 if task_config.get("IsImageComment"):
                     is_image_comment = True
-                    images_dir = task_config.get("ImageFolderPath", "resources/images")
+                    images_dir = task_config.get("ImageFolderPath") or "resources/images"
                     is_image_comment_with_text = task_config.get("IsImageCommentWithText", False)
                     is_image_comment_auto_generate = task_config.get("IsImageCommentAutoGenerate", False)
                 else:
                     image_group_uids = task_config.get("ImageGroupUids", [])
                     if image_group_uids:
                         is_image_comment = any(item in group_id or item in target_url for item in image_group_uids)
+                        
+                        # Ưu tiên nội dung comment riêng (nếu có)
+                        custom_comments = task_config.get("CustomGroupCommentsList", [])
+                        if custom_comments and any((c.get("GroupId") == group_id or c.get("GroupId") in target_url) for c in custom_comments):
+                            is_image_comment = False
+                            
                         if is_image_comment:
                             print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ƯU TIÊN ẢNH (Text Mode)! Sử dụng chế độ comment bằng ảnh.")
-                            images_dir = task_config.get("ImageFolderPath", "resources/images")
+                            images_dir = task_config.get("ImageFolderPath") or "resources/images"
             for attempt in range(2):
                 if attempt > 0:
                     driver.refresh()
@@ -584,7 +590,9 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             
                             if is_edit_comment == "yes" and is_success:
                                 try:
-                                    comment_text_xpath = f"//*[contains(text(), '{content}')]"
+                                    safe_search_text = content.split('\n')[0].strip()[:30]
+                                    if not safe_search_text: safe_search_text = "Check inbox nhé"
+                                    comment_text_xpath = f"//*[contains(text(), '{safe_search_text}')]"
                                     posted_comment = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, comment_text_xpath)))
                                     
                                     actions = ActionChains(driver)
@@ -656,15 +664,20 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
         if task_config:
             if task_config.get("IsImageComment"):
                 is_image_comment = True
-                images_dir = task_config.get("ImageFolderPath", "resources/images")
+                images_dir = task_config.get("ImageFolderPath") or "resources/images"
                 is_image_comment_with_text = task_config.get("IsImageCommentWithText", False)
             else:
                 image_group_uids = task_config.get("ImageGroupUids", [])
                 if image_group_uids:
                     is_image_comment = any(item in group_id or item in target_url for item in image_group_uids)
+                    
+                    custom_comments = task_config.get("CustomGroupCommentsList", [])
+                    if custom_comments and any((c.get("GroupId") == group_id or c.get("GroupId") in target_url) for c in custom_comments):
+                        is_image_comment = False
+                        
                     if is_image_comment:
                         print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ƯU TIÊN ẢNH! Sử dụng chế độ comment bằng ảnh.")
-                        images_dir = task_config.get("ImageFolderPath", "resources/images")
+                        images_dir = task_config.get("ImageFolderPath") or "resources/images"
 
         # Comment logic
         post_url = list(collected_links)[0]
@@ -824,7 +837,9 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 try:
                     print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Bulk Content)...")
                     # 1. Tìm comment vừa đăng (theo nội dung vừa gõ)
-                    comment_text_xpath = f"//*[contains(text(), '{content}')]"
+                    safe_search_text = content.split('\n')[0].strip()[:30]
+                    if not safe_search_text: safe_search_text = "Check inbox nhé"
+                    comment_text_xpath = f"//*[contains(text(), '{safe_search_text}')]"
                     posted_comment = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, comment_text_xpath)))
                     
                     # Hover & Click Menu
