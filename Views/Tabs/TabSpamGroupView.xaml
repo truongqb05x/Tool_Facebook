@@ -174,10 +174,45 @@
                                 </Border>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Visibility="{Binding IsTextComment, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="Group ưu tiên ảnh (Text Mode)" FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,6"/>
-                                <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc">
-                                    <TextBox Text="{Binding ImageGroupUids}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" Padding="8" BorderThickness="0" FontFamily="Consolas" Background="Transparent"/>
+                            <StackPanel Grid.Column="2">
+                                <Grid Margin="0,0,0,6">
+                                    <TextBlock Text="Nội dung comment riêng theo Group" FontSize="12" FontWeight="SemiBold" Foreground="#555" VerticalAlignment="Center"/>
+                                    <Button Content="Thêm" Command="{Binding AddCustomGroupCommentCommand}" HorizontalAlignment="Right" Background="#1a73e8" Foreground="White" BorderThickness="0" Padding="15,0" Cursor="Hand" Height="28"/>
+                                </Grid>
+                                
+                                <Border BorderBrush="#dadce0" BorderThickness="1" Background="#fafbfc" Height="100">
+                                    <DataGrid x:Name="customCommentsGrid" ItemsSource="{Binding CustomGroupCommentsList}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="All" Background="White" RowBackground="White" AlternatingRowBackground="#f8f9fa" BorderThickness="0" HorizontalGridLinesBrush="#eee" VerticalGridLinesBrush="#eee">
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="DataGridRow">
+                                                <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                                                <Setter Property="ContextMenu">
+                                                    <Setter.Value>
+                                                        <ContextMenu>
+                                                            <MenuItem Header="Sửa" Command="{Binding PlacementTarget.Tag.EditCustomGroupCommentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                                            <MenuItem Header="Xóa" Command="{Binding PlacementTarget.Tag.DeleteCustomGroupCommentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                                        </ContextMenu>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </DataGrid.RowStyle>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ID" Binding="{Binding GroupId}" Width="100" IsReadOnly="True">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Header="Nội dung" Binding="{Binding Content}" Width="*" IsReadOnly="True">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                                        <Setter Property="Padding" Value="2"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                            </DataGridTextColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
                                 </Border>
                             </StackPanel>
                         </Grid>

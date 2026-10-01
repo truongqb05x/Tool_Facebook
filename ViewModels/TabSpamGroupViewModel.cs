@@ -111,9 +111,15 @@ namespace FPlusClone.ViewModels
             set { if (_newComment != value) { _newComment = value; OnPropertyChanged(); } }
         }
 
+        public System.Collections.ObjectModel.ObservableCollection<CustomGroupCommentModel> CustomGroupCommentsList { get; set; } = new System.Collections.ObjectModel.ObservableCollection<CustomGroupCommentModel>();
+
         public ICommand AddCommentCommand { get; }
         public ICommand EditCommentCommand { get; }
         public ICommand DeleteCommentCommand { get; }
+        
+        public ICommand AddCustomGroupCommentCommand { get; }
+        public ICommand EditCustomGroupCommentCommand { get; }
+        public ICommand DeleteCustomGroupCommentCommand { get; }
 
         private int _maxComments = 5;
         public int MaxComments
@@ -187,12 +193,14 @@ namespace FPlusClone.ViewModels
         private readonly string commentsFilePath = "comments_spamgroup.txt";
         private readonly string groupUidsFilePath = "group_uids_spamgroup.txt";
         private readonly string imageGroupUidsFilePath = "image_group_uids_spamgroup.txt";
+        private readonly string customGroupCommentsFilePath = "custom_group_comments_spamgroup.txt";
 
         public TabSpamGroupViewModel()
         {
             LoadComments();
             LoadGroupUids();
             LoadImageGroupUids();
+            LoadCustomGroupComments();
             LoadUIConfig();
 
             SelectImageFolderCommand = new RelayCommand(_ =>
@@ -253,6 +261,47 @@ namespace FPlusClone.ViewModels
                             oldComment.Content = newText;
                             SaveComments();
                         }
+                    }
+                }
+            });
+
+            AddCustomGroupCommentCommand = new RelayCommand(_ =>
+            {
+                var window = new Views.EditCustomGroupCommentWindow()
+                {
+                    Owner = System.Windows.Application.Current.MainWindow
+                };
+
+                if (window.ShowDialog() == true)
+                {
+                    CustomGroupCommentsList.Add(new CustomGroupCommentModel { GroupId = window.GroupId, Content = window.CommentContent });
+                    SaveCustomGroupComments();
+                }
+            });
+
+            DeleteCustomGroupCommentCommand = new RelayCommand(obj =>
+            {
+                if (obj is CustomGroupCommentModel comment)
+                {
+                    CustomGroupCommentsList.Remove(comment);
+                    SaveCustomGroupComments();
+                }
+            });
+
+            EditCustomGroupCommentCommand = new RelayCommand(obj =>
+            {
+                if (obj is CustomGroupCommentModel oldComment)
+                {
+                    var window = new Views.EditCustomGroupCommentWindow(oldComment.GroupId, oldComment.Content)
+                    {
+                        Owner = System.Windows.Application.Current.MainWindow
+                    };
+
+                    if (window.ShowDialog() == true)
+                    {
+                        oldComment.GroupId = window.GroupId;
+                        oldComment.Content = window.CommentContent;
+                        SaveCustomGroupComments();
                     }
                 }
             });
@@ -345,6 +394,30 @@ namespace FPlusClone.ViewModels
         {
             var lines = CommentsList.Select(c => c.Content?.Replace("\r", "")?.Replace("\n", "[NEWLINE]")).ToArray();
             System.IO.File.WriteAllLines(commentsFilePath, lines);
+        }
+
+        private void LoadCustomGroupComments()
+        {
+            if (System.IO.File.Exists(customGroupCommentsFilePath))
+            {
+                var lines = System.IO.File.ReadAllLines(customGroupCommentsFilePath);
+                foreach (var line in lines)
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        var parts = line.Split(new[] { '|' }, 2);
+                        string groupId = parts[0];
+                        string content = parts.Length > 1 ? parts[1].Replace("[NEWLINE]", "\n") : "";
+                        CustomGroupCommentsList.Add(new CustomGroupCommentModel { GroupId = groupId, Content = content });
+                    }
+                }
+            }
+        }
+
+        private void SaveCustomGroupComments()
+        {
+            var lines = CustomGroupCommentsList.Select(c => $"{c.GroupId}|{c.Content?.Replace("\r", "")?.Replace("\n", "[NEWLINE]")}").ToArray();
+            System.IO.File.WriteAllLines(customGroupCommentsFilePath, lines);
         }
 
         private void LoadGroupUids()
@@ -440,6 +513,7 @@ namespace FPlusClone.ViewModels
                 IsSequentialComment = IsSequentialComment,
                 IsRandomComment = IsRandomComment,
                 CommentsList = CommentsList.Select(c => c.Content).ToList(),
+                CustomGroupCommentsList = CustomGroupCommentsList.Select(c => new { c.GroupId, c.Content }).ToList(),
                 SelectedAccounts = selectedUids,
                 SelectedAccountsInfo = accountLines, // <-- Truyền trực tiếp qua json
                 

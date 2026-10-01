@@ -356,9 +356,23 @@ namespace FPlusClone.ViewModels
                             {
                                 try
                                 {
+                                    var settings = Views.SettingsViewModel.Load();
+                                    string profilePath = settings?.ProfilePath ?? "";
+                                    
                                     for (int i = 0; i < itemsToRemove.Count; i++)
                                     {
                                         var acc = itemsToRemove[i];
+                                        
+                                        // Xóa profile Chrome
+                                        if (!string.IsNullOrEmpty(profilePath) && !string.IsNullOrEmpty(acc.Uid))
+                                        {
+                                            string accProfile = System.IO.Path.Combine(profilePath, acc.Uid);
+                                            if (System.IO.Directory.Exists(accProfile))
+                                            {
+                                                try { System.IO.Directory.Delete(accProfile, true); } catch { }
+                                            }
+                                        }
+
                                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                                         {
                                             Accounts.Remove(acc);
@@ -405,8 +419,22 @@ namespace FPlusClone.ViewModels
                 if (dialog.Confirmed)
                 {
                     BackupDeletedAccounts(accountsToDelete, isAllFolder ? "Xóa tất cả" : $"Xóa folder '{SelectedFolder}'");
+                    var settings = Views.SettingsViewModel.Load();
+                    string profilePath = settings?.ProfilePath ?? "";
+                    
                     foreach (var acc in accountsToDelete)
+                    {
+                        // Xóa profile Chrome
+                        if (!string.IsNullOrEmpty(profilePath) && !string.IsNullOrEmpty(acc.Uid))
+                        {
+                            string accProfile = System.IO.Path.Combine(profilePath, acc.Uid);
+                            if (System.IO.Directory.Exists(accProfile))
+                            {
+                                try { System.IO.Directory.Delete(accProfile, true); } catch { }
+                            }
+                        }
                         Accounts.Remove(acc);
+                    }
                     SaveAccounts();
                     UpdateFolderStatistics();
                     Log(isAllFolder

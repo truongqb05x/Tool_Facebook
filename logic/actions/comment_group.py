@@ -463,8 +463,19 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             
                             target_edit_content = "Check inbox nhé"
                             if task_config:
-                                if task_config.get("IsImageCommentAutoGenerate", False):
-                                    content = generate_auto_comment()
+                                custom_comments = task_config.get("CustomGroupCommentsList", [])
+                                matched_custom_content = None
+                                for c_item in custom_comments:
+                                    if c_item.get("GroupId") == group_id or c_item.get("GroupId") in current_url:
+                                        matched_custom_content = c_item.get("Content", "")
+                                        break
+                                
+                                if matched_custom_content:
+                                    target_edit_content = matched_custom_content
+                                    # Vô hiệu hóa auto generate nếu nhóm này có nội dung riêng
+                                    if task_config.get("IsImageCommentAutoGenerate"):
+                                        is_image_comment_auto_generate = False
+                                        is_image_comment_with_text = True
                                 else:
                                     comment_list = task_config.get("CommentsList", [])
                                     if comment_list:
@@ -473,9 +484,10 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                             target_edit_content = comment_list[idx]
                                         else:
                                             target_edit_content = random.choice(comment_list)
-                                    else:
-                                        target_edit_content = "Check inbox nhé"
-                                    
+
+                                if task_config.get("IsImageCommentAutoGenerate", False) and not matched_custom_content:
+                                    content = generate_auto_comment()
+                                else:
                                     if is_edit_comment == "yes":
                                         with FILE_LOCK:
                                             stt_lines = read_file("resources/stt.txt")
