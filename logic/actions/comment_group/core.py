@@ -13,7 +13,7 @@ from utils.file_utils import read_file
 from utils.waiter import wait_for_element_with_retry
 from utils.locks import FILE_LOCK
 from utils.helpers import (
-    is_checkpoint, is_soft_checkpoint, safe_url, type_human_like,
+    type_human_like,
     is_logged_out
 )
 from actions.utils.like_actions import random_like_post

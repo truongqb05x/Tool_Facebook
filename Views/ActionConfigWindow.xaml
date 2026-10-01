@@ -52,7 +52,6 @@
                 <TextBlock Text=" lần" Margin="5,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
 
-            <CheckBox Content="Nhắn tin qua lại với nhau" IsChecked="{Binding IsChatWithEachOther}" Margin="0,0,0,10"/>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,15" IsEnabled="False" Opacity="0.6">
                 <CheckBox Content="Kết bạn ngẫu nhiên tối đa" IsChecked="{Binding IsAddFriends}" VerticalAlignment="Center" Width="180"/>

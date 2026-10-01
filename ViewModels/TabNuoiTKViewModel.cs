@@ -305,6 +305,18 @@ namespace FPlusClone.ViewModels
                                     acc.Progress = "Nuôi tài khoản hoàn tất";
                                 }
                             }
+
+                            // Check for UI_POST_SUCCESS — đăng bài thành công
+                            var postSuccessMatch = System.Text.RegularExpressions.Regex.Match(e.Data, @"\[(.*?)\]\s*UI_POST_SUCCESS");
+                            if (postSuccessMatch.Success)
+                            {
+                                string uidStr = postSuccessMatch.Groups[1].Value.Trim();
+                                var acc = TaskAccounts.FirstOrDefault(a => a.Account.Uid == uidStr);
+                                if (acc != null)
+                                {
+                                    acc.Progress = $"✅ Đã đăng bài ({System.DateTime.Now:dd/MM HH:mm})";
+                                }
+                            }
                             
                             // Check for UI_LOGIN_FAILED
                             var loginFailMatch = System.Text.RegularExpressions.Regex.Match(e.Data, @"\[(.*?)\]\s*UI_LOGIN_FAILED");
