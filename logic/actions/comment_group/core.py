@@ -20,151 +20,17 @@ from actions.utils.like_actions import random_like_post
 from actions.join_groups import join_single_group
 
 import string
-
-def generate_auto_comment():
-    length = random.randint(5, 10)
-    chars = ''.join(random.choices(string.ascii_lowercase, k=length)).capitalize()
-    icons = ["👍", "❤️", "🥰", "😍", "🎉", "🔥", "✨", "💯", "😊", "😁", "⭐", "🍀", "🌸", "💐", "🎀", "💖", "💗"]
-    return f"{chars} {random.choice(icons)}"
-
-def close_obstructing_modals(driver, uid):
-    try:
-        current_url = driver.current_url
-        if "/posts/" in current_url or "/permalink/" in current_url:
-            print(f"[{uid}] 🔍 URL đang dạng Post, chờ nút Đóng tối đa 30s...")
-            for wait_sec in range(30):
-                # Lấy tất cả nút Đóng, không giới hạn SVG để bao phủ tất cả các dạng modal
-                close_btns = driver.find_elements(By.XPATH, "//div[(@aria-label='Đóng' or @aria-label='Close' or @aria-label='Thoát') and @role='button']")
-                if close_btns:
-                    for i, btn in enumerate(close_btns):
-                        # Kích hoạt sự kiện chuột cấp thấp (vượt qua mọi lớp chặn của React/Facebook)
-                        try:
-                            script = "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));"
-                            driver.execute_script(script, btn)
-                        except: pass
-                        
-                        # JS click thông thường
-                        try:
-                            driver.execute_script("arguments[0].click();", btn)
-                        except: pass
-                        
-                        # Native click
-                        try:
-                            if btn.is_displayed():
-                                btn.click()
-                        except: pass
-                        
-                    print(f"[{uid}] ✅ Đã tìm thấy và click nút Đóng modal bài viết.")
-                    time.sleep(1)
-                    break
-                else:
-                    time.sleep(1)
-        else:
-            # Nếu url là dạng feed trang chủ group thì bỏ qua không cần check nút Đóng
-            pass
-    except Exception as e:
-        print(f"[{uid}] Lỗi đóng modal: {e}")
+from .helpers import generate_auto_comment, close_obstructing_modals, check_comment_status_after_post
+from .post_parser import extract_post_info
 
 
-def check_comment_status_after_post(driver, uid):
-    """
-    Kiểm tra sau khi gửi comment:
-    - Modal chặn tính năng (Feature Block)
-    - Modal Xem xét quyền tham gia (Membership)
-    - Comment bị từ chối / chờ duyệt (dựa vào nút Chỉnh sửa)
-    Return: "BLOCK_MODAL_DETECTED" | "MEMBERSHIP_MODAL" | "BLOCK_EDIT_DETECTED" | "OK"
-    """
-    # 1. Feature Block Modal
-    try:
-        block_modal_selectors = [
-            "//*[contains(text(), 'Giờ bạn chưa dùng được tính năng này')]",
-            "//*[contains(text(), 'chưa dùng được tính năng này')]",
-            "//*[contains(text(), 'giới hạn tần suất bạn đăng bài')]"
-        ]
-        for sel in block_modal_selectors:
-            if driver.find_elements(By.XPATH, sel):
-                print(f"[{uid}] ⚠️ Phát hiện modal chặn tính năng của Facebook!")
-                try:
-                    ok_btns = driver.find_elements(By.XPATH, "//div[@role='button']//span[text()='OK']")
-                    if ok_btns:
-                        ok_btns[0].click()
-                        time.sleep(2)
-                except: pass
-                return "BLOCK_MODAL_DETECTED"
-    except Exception as e:
-        print(f"[{uid}] ⚠️ Lỗi khi check modal chặn tính năng: {e}")
 
-    # 2. Membership Modal (Xem xét quyền tham gia)
-    try:
-        membership_selectors = [
-            "//div[@aria-label='Xem xét quyền tham gia']",
-            "//*[contains(text(), 'Xem xét quyền tham gia')]"
-        ]
-        for sel in membership_selectors:
-            if driver.find_elements(By.XPATH, sel):
-                textareas = driver.find_elements(By.TAG_NAME, "textarea")
-                for ta in textareas:
-                    try:
-                        if ta.is_displayed():
-                            ta.send_keys("ok")
-                            time.sleep(random.uniform(1, 2))
-                    except: pass
-                submit_btns = driver.find_elements(By.XPATH, "//div[@aria-label='Gửi' and @role='button']")
-                if submit_btns:
-                    submit_btns[0].click()
-                    time.sleep(3)
-                return "MEMBERSHIP_MODAL"
-    except Exception as e:
-        print(f"[{uid}] ⚠️ Lỗi khi xử lý modal thành viên: {e}")
 
-    # 3. Kiểm tra nút Chỉnh sửa (comment được duyệt hay bị từ chối)
-    try:
-        menu_xpath = "//div[@aria-label='Chỉnh sửa hoặc xóa bình luận này' or @aria-label='Edit or delete this comment' or @aria-label='Edit or delete this']"
-        menu_btns = []
-        timeout = 60
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            menu_btns = driver.find_elements(By.XPATH, menu_xpath)
-            if menu_btns:
-                break
-            time.sleep(2)
 
-        if menu_btns:
-            menu_btn = menu_btns[-1]
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", menu_btn)
-            time.sleep(1)
-            
-            edit_opts = []
-            for attempt in range(3):
-                try:
-                    ActionChains(driver).move_to_element(menu_btn).perform()
-                    time.sleep(1)
-                    menu_btn.click()
-                except Exception as click_err:
-                    print(f"[{uid}] ⚠️ Lỗi click bình thường, dùng js click: {click_err}")
-                    driver.execute_script("arguments[0].click();", menu_btn)
-                
-                time.sleep(2)
-                edit_opts = driver.find_elements(By.XPATH, "//span[contains(text(), 'Chỉnh sửa') or contains(text(), 'Edit')]")
-                if edit_opts:
-                    break
-                print(f"[{uid}] ⚠️ Chưa thấy tùy chọn 'Chỉnh sửa' (thử lại {attempt + 1}/3)...")
-                time.sleep(2)
-                
-            if not edit_opts:
-                print(f"[{uid}] ❌ Không có tùy chọn 'Chỉnh sửa' sau 3 lần click. Comment có thể đã bị từ chối hoặc đang chờ duyệt.")
-                return "BLOCK_EDIT_DETECTED"
-            else:
-                ActionChains(driver).send_keys(Keys.ESCAPE).perform()
-                time.sleep(1)
-        else:
-            print(f"[{uid}] ⚠️ Không tìm thấy nút menu của comment sau {timeout}s. Có thể đã bị từ chối/chờ duyệt.")
-            return "BLOCK_EDIT_DETECTED"
-    except Exception as e:
-        print(f"[{uid}] ⚠️ Lỗi khi kiểm tra nút Chỉnh sửa: {e}")
-        return "BLOCK_EDIT_DETECTED"
 
-    return "OK"
+
+
+
 
 
 def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_config=None, comment_index=0):
@@ -410,53 +276,31 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             driver.execute_script("arguments[0].setAttribute('data-commented', 'true')", box_to_comment)
                             
                             # Lấy link bài viết và thời gian
-                            real_post_link = None
-                            post_time = "Không xác định"
-                            post_id = ""
-                            try:
-                                post_container = box_to_comment.find_element(By.XPATH, "./ancestor::div[.//a[@role='link' and @target='_blank']][1]")
-                                post_links = post_container.find_elements(By.XPATH, ".//a[@role='link' and @target='_blank']")
-                                
-                                for link in post_links:
-                                    try:
-                                        try:
-                                            parent_text = link.find_element(By.XPATH, "..").text
-                                            if parent_text: post_time = parent_text.split("·")[0].strip()
-                                        except: pass
-
-                                        href = link.get_attribute("href")
-                                        if href and ("/posts/" in href or "/permalink/" in href):
-                                            real_post_link = href
-                                            break
-                                        
-                                        from selenium.webdriver.common.action_chains import ActionChains
-                                        ActionChains(driver).move_to_element(link).perform()
-                                        time.sleep(1)
-                                        
-                                        href_after_hover = link.get_attribute("href")
-                                        if href_after_hover and ("/posts/" in href_after_hover or "/permalink/" in href_after_hover):
-                                            real_post_link = href_after_hover
-                                            break
-                                    except: pass
-                                    
-                                if not real_post_link and post_links:
-                                    href = post_links[0].get_attribute("href")
-                                    if href: real_post_link = href
-                                        
-                                if real_post_link:
-                                    if "/posts/" in real_post_link or "/permalink/" in real_post_link:
-                                        real_post_link = real_post_link.split("?")[0]
-                                    import re
-                                    match = re.search(r'/(?:posts|permalink)/(\d+)', real_post_link)
-                                    if match: post_id = match.group(1)
-                                    else: post_id = real_post_link.rstrip("/").split("/")[-1]
-                            except Exception as e:
-                                pass
-                                
+                            post_time, post_id, real_post_link = extract_post_info(driver, uid, box_to_comment)
                             print(f"[{uid}] 🕒 Thời gian đăng: {post_time} | ID: {post_id}")
                             
                             if not is_valid_time(post_time):
                                 print(f"[{uid}] ⏭️ Bỏ qua vì thời gian ({post_time}) không thỏa mãn (chứa ngày/tháng/năm).")
+                                
+                                if post_time == "Không xác định":
+                                    # 1. Đóng modal nếu có
+                                    close_obstructing_modals(driver, uid)
+                                    
+                                    # 2. Kiểm tra xem có bị văng ra trang chủ không
+                                    curr_url = driver.current_url
+                                    if curr_url.rstrip("/") in ["https://www.facebook.com", "https://m.facebook.com"]:
+                                        print(f"[{uid}] ⚠️ Bị văng ra trang chủ, truy cập lại URL group...")
+                                        driver.get(target_url)
+                                        time.sleep(5)
+                                        continue
+                                    
+                                    # 3. Kiểm tra xem có đúng định dạng URL bài viết mới nhất không
+                                    elif "sorting_setting=CHRONOLOGICAL" not in curr_url:
+                                        print(f"[{uid}] ⚠️ URL hiện tại không phải dạng bài viết mới nhất, điều hướng lại...")
+                                        driver.get(target_url)
+                                        time.sleep(5)
+                                        continue
+                                
                                 driver.execute_script("window.scrollBy(0, 400);")
                                 time.sleep(2)
                                 continue
@@ -608,7 +452,29 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                 driver.execute_script("arguments[0].click(); arguments[0].focus();", comment_input)
                                 time.sleep(1)
                                 type_human_like(driver, content, element=None)
-                                ActionChains(driver).send_keys(Keys.ENTER).perform()
+                                time.sleep(1)
+                                
+                                submitted = False
+                                for submit_xpath in [
+                                    "//div[@id='focused-state-composer-submit']//div[@role='button']",
+                                    "//div[@aria-label='Đăng bình luận' and @role='button']",
+                                    "//div[@aria-label='Post comment' and @role='button']",
+                                ]:
+                                    try:
+                                        btns = driver.find_elements(By.XPATH, submit_xpath)
+                                        for btn in btns:
+                                            if btn.is_displayed():
+                                                try:
+                                                    driver.execute_script("arguments[0].click();", btn)
+                                                except:
+                                                    btn.click()
+                                                submitted = True
+                                                break
+                                    except: pass
+                                    if submitted: break
+                                    
+                                if not submitted:
+                                    ActionChains(driver).send_keys(Keys.ENTER).perform()
                                 time.sleep(5)
                             
                             # ===== KIỂM TRA BỊ CHẶN / CHỜ DUYỆT =====

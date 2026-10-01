@@ -68,7 +68,7 @@ def run_account_flow(cookie_line, window_index):
     proxy_str = None
     kiot_keys = []
     # --- Test cứng Proxy theo yêu cầu ---
-    proxy_str = "171.249.209.132:31731:8K35Fz:4jIe50"
+    proxy_str = "42.116.203.26:24970:8K35Fz:4jIe50"
     proxy_config = parse_proxy_str(proxy_str)
     print(f"[Thread-{flow_type}] Sử dụng Proxy chỉ định: {proxy_str}")
     
@@ -223,12 +223,17 @@ def run_account_flow(cookie_line, window_index):
                                         found_link_element = link
                                         break
                                     
-                                    # Hover để Facebook kích hoạt đổi href thật
+                                    # Hover để Facebook kích hoạt đổi href thật, chờ tối đa 10s
                                     from selenium.webdriver.common.action_chains import ActionChains
                                     ActionChains(driver).move_to_element(link).perform()
-                                    time.sleep(1)
                                     
-                                    href_after_hover = link.get_attribute("href")
+                                    href_after_hover = None
+                                    for _ in range(20):
+                                        time.sleep(0.5)
+                                        href_after_hover = link.get_attribute("href")
+                                        if href_after_hover and ("/posts/" in href_after_hover or "/permalink/" in href_after_hover):
+                                            break
+                                            
                                     if href_after_hover and ("/posts/" in href_after_hover or "/permalink/" in href_after_hover):
                                         real_post_link = href_after_hover
                                         found_link_element = link
