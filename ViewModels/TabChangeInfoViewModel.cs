@@ -288,7 +288,7 @@ namespace FPlusClone.ViewModels
                                 var acc = TaskAccounts.FirstOrDefault(a => a.Account.Uid == uidStr);
                                 if (acc != null) 
                                 {
-                                    acc.Account.Fa2 = new2fa;
+                                    acc.Account.TwoFA = new2fa;
                                     var mainVm = System.Windows.Application.Current.MainWindow.DataContext as MainViewModel;
                                     mainVm?.UpdateAccount2FA(uidStr, new2fa);
                                 }

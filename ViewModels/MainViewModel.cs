@@ -628,7 +628,7 @@ namespace FPlusClone.ViewModels
         {
             var acc = Accounts.FirstOrDefault(a => a.Uid == uid);
             if (acc == null) return;
-            acc.Fa2 = secret;
+            acc.TwoFA = secret;
             SaveAccounts();
         }
 
