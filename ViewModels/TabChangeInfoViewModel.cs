@@ -215,6 +215,12 @@ namespace FPlusClone.ViewModels
 
             string jsonConfig = System.Text.Json.JsonSerializer.Serialize(fullConfig);
 
+            foreach (var acc in selectedTaskAccounts)
+            {
+                if (acc.Progress == null || acc.Progress == "" || acc.Progress == "Đang chạy..." || acc.Progress == "Đang chạy")
+                    acc.Progress = "0/1";
+            }
+
             IsRunning = true;
             StatusText = "Đang chạy";
             LogText = "";
@@ -277,7 +283,7 @@ namespace FPlusClone.ViewModels
                             {
                                 string uidStr = matchProgress.Groups[1].Value.Trim();
                                 var acc = TaskAccounts.FirstOrDefault(a => a.Account.Uid == uidStr);
-                                if (acc != null) acc.Status = "Thành công";
+                                if (acc != null) { acc.Status = "Thành công"; acc.Progress = "1/1"; }
                             }
                             
                             var match2FA = System.Text.RegularExpressions.Regex.Match(e.Data, @"\[(.*?)\]\s*UI_2FA_UPDATED\|(.*)");

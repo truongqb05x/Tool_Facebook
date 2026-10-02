@@ -548,6 +548,12 @@ namespace FPlusClone.ViewModels
                 acc.Progress = $"0/{MaxComments}";
             }
 
+            foreach (var acc in selectedTaskAccounts)
+            {
+                if (acc.Progress == null || acc.Progress == "" || acc.Progress == "Đang chạy..." || acc.Progress == "Đang chạy")
+                    acc.Progress = "0/1";
+            }
+
             IsRunning = true;
             StatusText = "Đang chạy";
             LogText = ""; // Clear log when starting
