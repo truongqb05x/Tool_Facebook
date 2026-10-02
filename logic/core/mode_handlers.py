@@ -14,7 +14,7 @@ from actions.join_groups import join_single_group
 from actions.out_group import out_groups_by_mode
 from actions.utils.read_notifications import read_one_random_notification
 from actions.utils.chat_two_ways import run_two_way_chat
-from actions.utils.login import login_with_credentials
+from actions.utils.login import login_with_credentials, verify_and_relogin
 from utils.scan_group import get_joined_groups
 
 def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_edit_comment, warmup_time_sec, keyword_list, group_join_list, out_group_mode, out_group_list, page_list, page_comment_mode, delete_page_after_comment, ttc_jobs, ttc_comment_mode, cycle_count, task_config, parts, win_pos, proxy_config, user_agent):
@@ -335,6 +335,9 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
     if execution_mode == 10:
         #print(f"[{uid}]  MODE 10: Thay đổi thông tin...")
         
+        if not verify_and_relogin(driver, uid, task_config): 
+            return False
+            
         is_up_avatar = task_config.get("IsUpAvatar", False) if task_config else False
         result = True
         
@@ -355,26 +358,43 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
         if task_config.get("IsChangeName", False):
             from actions.utils.change_info.change_name import do_change_change_name
             do_change_change_name(driver, uid)
+            time.sleep(random.randint(3, 5))
             
         if task_config.get("IsChangeCityNow", False):
             from actions.utils.change_info.city_now import do_change_city_now
             do_change_city_now(driver, uid)
+            time.sleep(random.randint(3, 5))
             
         if task_config.get("IsChangeHometown", False):
             from actions.utils.change_info.quequan import do_change_quequan
             do_change_quequan(driver, uid)
+            time.sleep(random.randint(3, 5))
             
         if task_config.get("IsChangeHighSchool", False):
             from actions.utils.change_info.thpt import do_change_thpt
             do_change_thpt(driver, uid)
+            time.sleep(random.randint(3, 5))
             
         if task_config.get("IsChangeUniversity", False):
             from actions.utils.change_info.uni import do_change_uni
             do_change_uni(driver, uid)
+            time.sleep(random.randint(3, 5))
             
         if task_config.get("IsChangeRelationship", False):
             from actions.utils.change_info.moiquanhe import do_change_moiquanhe
             do_change_moiquanhe(driver, uid)
+            time.sleep(random.randint(3, 5))
+            
+        if task_config.get("IsTurnOn2fa", False):
+            from actions.utils.change_info.turn_on_2fa import do_change_2fa
+            password = parts[1].strip() if len(parts) > 1 else ""
+            fa2_secret = ""
+            for p in parts[2:]:
+                p = p.strip()
+                if not ("c_user=" in p or "sb=" in p or "datr=" in p or ";" in p) and p.isalnum() and len(p) >= 10:
+                    fa2_secret = p
+            do_change_2fa(driver, uid, password, fa2_secret)
+            time.sleep(random.randint(3, 5))
             
         return result
 

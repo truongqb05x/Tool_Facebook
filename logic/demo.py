@@ -157,141 +157,251 @@ def run_account_flow(cookie_line, window_index):
         if login_verified:
             print(f"[Thread-{flow_type}] Xác minh login thành công.")
             
-            print(f"[Thread-{flow_type}] Bắt đầu test up story trực tiếp...")
             try:
-                print(f"[{uid}] Đang tìm nút Tạo tin...")
-                driver.get("https://www.facebook.com/")
+                print(f"[Thread-{flow_type}] Truy cập trang 2FA...")
+                driver.get("https://accountscenter.facebook.com/password_and_security/two_factor")
                 
-                wait_60 = WebDriverWait(driver, 60)
+                wait_120 = WebDriverWait(driver, 120)
+                print(f"[Thread-{flow_type}] Đang chờ tài khoản hiển thị...")
                 
-                # Chờ nút Tạo tin hiện rõ trên màn hình
-                create_story_btn = wait_60.until(EC.visibility_of_element_located((By.XPATH, "//a[contains(@href, '/stories/create')] | //a[@aria-label='Tạo tin' or @aria-label='Create Story']")))
-                time.sleep(2) # Cho React nạp xong event
-                driver.execute_script("arguments[0].click();", create_story_btn)
-                print(f"[{uid}] Đã click vào nút Tạo tin thành công!")
+                # Tìm phần tử role="button" có chứa chữ "Facebook" bên trong
+                xpath = "//div[@role='button' and .//div[contains(text(), 'Facebook')]]"
                 
-                print(f"[{uid}] Chờ tải trang Tạo tin (tối đa 180s)...")
-                wait_180 = WebDriverWait(driver, 180)
-                wait_180.until(EC.url_contains("/stories/create"))
-                
-                print(f"[{uid}] Chờ giao diện load xong (tìm thẻ h1 'Tin của bạn')...")
-                wait_180.until(EC.presence_of_element_located((By.XPATH, "//h1[text()='Tin của bạn' or text()='Your Story']")))
-                
-                print(f"[{uid}] Đang tìm nút Loại tin (Ảnh/Chữ)...")
-                xpath_photo_story = "//div[@aria-label='Tạo tin có ảnh hoặc video' or contains(@aria-label, 'Photo Story')] | //span[text()='Tạo tin có ảnh hoặc video' or text()='Create a Photo Story']/ancestor::div[@role='button'] | //span[text()='Tạo tin có ảnh hoặc video' or text()='Create a Photo Story']"
-                story_type_btn = wait_180.until(EC.presence_of_element_located((By.XPATH, xpath_photo_story)))
-                
-                import os
-                image_path = r"C:\Users\ADMIN\Documents\106689-673786365_medium.mp4"
-                print(f"[{uid}] Dùng file ảnh/video cố định: {image_path}")
-                
-                print(f"[{uid}] Tìm thẻ input file để nhét file ngầm (tránh dùng OS Dialog)...")
-                try:
-                    # Tìm tất cả các thẻ input dạng file
-                    file_inputs = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, "//input[@type='file']")))
-                    print(f"[{uid}] [DEBUG] Đã tìm thấy {len(file_inputs)} thẻ <input type='file'> trên trang.")
-                    
-                    if file_inputs:
-                        success = False
-                        # Đảo ngược danh sách file_inputs để lấy thẻ xuất hiện sau cùng (thường là thẻ thật)
-                        file_inputs.reverse()
-                        
-                        for idx, inp in enumerate(file_inputs):
-                            accept_attr = inp.get_attribute("accept") or "Không có"
-                            
-                            # Tìm đúng thẻ input dùng để up ảnh/video
-                            if "image" in accept_attr or "video" in accept_attr or accept_attr == "Không có":
-                                print(f"[{uid}] [DEBUG] => Đã tìm thấy thẻ input (từ dưới lên). Tiến hành nạp file...")
-                                try:
-                                    driver.execute_script("arguments[0].style.display = 'block'; arguments[0].style.opacity = 1;", inp)
-                                    
-                                    # Selenium send_keys sẽ tự động nạp file
-                                    inp.send_keys(image_path)
-                                    print(f"[{uid}] [DEBUG] Đã nạp file thành công vào thẻ input!")
-                                    
-                                    # Bắn nhẹ event change phòng hờ
-                                    driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", inp)
-                                    
-                                    success = True
-                                    break # Nhét 1 phát ăn luôn, xong thoát vòng lặp
-                                except Exception as inner_e:
-                                    print(f"[{uid}] [DEBUG] Lỗi khi nạp thẻ: {inner_e}")
-                        
-                        if success:
-                            print(f"[{uid}] [DEBUG] Đã tiêm xong. Chờ 10s để giao diện React nạp và xử lý media...")
-                            time.sleep(10)
-                        else:
-                            print(f"[{uid}] Không thể tiêm file vào bất kỳ thẻ nào.")
-                            return
-                    else:
-                        print(f"[{uid}] Không tìm thấy thẻ input type='file' nào trên trang.")
-                        return
-                except Exception as e:
-                    print(f"[{uid}] Lỗi khi up ảnh/video bằng thẻ input: {e}")
-                    return
-                
-                # --- NẾU LÀ VIDEO THÌ THƯỜNG KHÔNG CẦN / KHÔNG THỂ THÊM NHẠC ---
-                is_video = any(image_path.lower().endswith(ext) for ext in ['.mp4', '.mov', '.avi', '.webm', '.mkv'])
-                
-                if not is_video:
-                    print(f"[{uid}] Chờ giao diện chỉnh sửa và tìm nút 'Thêm nhạc' (tối đa 15s)...")
+                # Thử nhiều lần để chống lỗi stale element (React re-render)
+                clicked = False
+                for attempt in range(60):
                     try:
-                        # Rút ngắn thời gian chờ nút thêm nhạc xuống 15s để không bị kẹt
-                        wait_15 = WebDriverWait(driver, 15)
-                        add_music_btn = wait_15.until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(), 'Thêm nhạc') or contains(text(), 'Add Music')]")))
-                        time.sleep(2)
+                        account_btn = wait_120.until(EC.presence_of_element_located((By.XPATH, xpath)))
                         
+                        # Cuộn tới phần tử để đảm bảo nó nằm trong viewport
+                        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", account_btn)
+                        time.sleep(0.5)
+                        
+                        # Thử dùng ActionChains (Mô phỏng chuột thật, tốt nhất cho React)
                         try:
-                            add_music_btn.click()
+                            from selenium.webdriver.common.action_chains import ActionChains
+                            ActionChains(driver).move_to_element(account_btn).click().perform()
                         except:
-                            driver.execute_script("arguments[0].click();", add_music_btn)
-                            
-                        print(f"[{uid}] Chờ popup tìm nhạc xuất hiện...")
-                        search_music_input = wait_15.until(EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Tìm kiếm nhạc' or @placeholder='Search music' or @aria-label='Tìm kiếm nhạc']")))
-                        time.sleep(3)
-                        
-                        song_rows_xpath = "//div[@data-visualcompletion='ignore-dynamic']/div[@role='button']"
-                        song_rows = driver.find_elements(By.XPATH, song_rows_xpath)
-                        
-                        if song_rows:
-                            selected_song = random.choice(song_rows)
+                            # Thử click native
                             try:
-                                selected_song.click()
+                                account_btn.click()
                             except:
-                                driver.execute_script("arguments[0].click();", selected_song)
-                            print(f"[{uid}] Đã chọn nhạc thành công!")
+                                # Thử click bằng JS
+                                driver.execute_script("arguments[0].click();", account_btn)
+                        
+                        clicked = True
+                        break # Thành công thì thoát vòng lặp
+                    except Exception as e:
+                        if attempt == 59:
+                            raise e
+                        time.sleep(2)
+                
+                if clicked:
+                    print(f"[Thread-{flow_type}] Đã click chọn tài khoản thành công.")
+                    
+                    password_handled = False
+                    
+                    def wait_and_handle_password_modal(dr, pwd, timeout=8):
+                        nonlocal password_handled
+                        if password_handled:
+                            return False
+                            
+                        end_time = time.time() + timeout
+                        while time.time() < end_time:
+                            try:
+                                pass_inputs = dr.find_elements(By.XPATH, "//input[@type='password']")
+                                if pass_inputs:
+                                    pass_input = pass_inputs[-1]
+                                    if pass_input.is_displayed():
+                                        print(f"[Thread-{flow_type}] Phát hiện popup mật khẩu, tiến hành điền...")
+                                        dr.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", pass_input)
+                                        time.sleep(0.5)
+                                        try:
+                                            pass_input.click()
+                                        except:
+                                            pass
+                                        
+                                        # Xóa trắng nhỡ lưu đệm
+                                        pass_input.clear()
+                                        pass_input.send_keys(pwd)
+                                        
+                                        tiep_tuc_btns = dr.find_elements(By.XPATH, "//div[@role='button' and .//span[text()='Tiếp tục']]")
+                                        if tiep_tuc_btns:
+                                            btn = tiep_tuc_btns[-1]
+                                            dr.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", btn)
+                                            time.sleep(0.5)
+                                            try: btn.click()
+                                            except: dr.execute_script("arguments[0].click();", btn)
+                                        
+                                        time.sleep(3)
+                                        password_handled = True
+                                        return True
+                            except:
+                                pass
+                            time.sleep(1)
+                        return False
+                    
+                    # 1. Chờ và ấn nút "Tiếp tục"
+                    print(f"[Thread-{flow_type}] Kiểm tra popup mật khẩu trước bước 1...")
+                    wait_and_handle_password_modal(driver, password, 8)
+                    
+                    print(f"[Thread-{flow_type}] Đang chờ nút 'Tiếp tục'...")
+                    xpath_tiep_tuc = "//div[@role='button' and .//span[text()='Tiếp tục']]"
+                    for attempt in range(60):
+                        try:
+                            # Lấy nút Tiếp tục mà KHÔNG phải của popup mật khẩu (chắc cú)
+                            btn_tiep_tuc = wait_120.until(EC.presence_of_element_located((By.XPATH, xpath_tiep_tuc)))
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", btn_tiep_tuc)
+                            time.sleep(1)
+                            try:
+                                btn_tiep_tuc.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", btn_tiep_tuc)
+                            break
+                        except Exception as e:
+                            if attempt == 59: raise Exception(f"Lỗi bước 1 (Ấn 'Tiếp tục'): {e}")
+                            time.sleep(2)
+                    
+                    # 2. Đợi nút "Sao chép khóa" xuất hiện, lấy nội dung khóa và ấn sao chép
+                    print(f"[Thread-{flow_type}] Kiểm tra popup mật khẩu trước bước 2...")
+                    wait_and_handle_password_modal(driver, password, 8)
+                    
+                    print(f"[Thread-{flow_type}] Đang chờ nút 'Sao chép khóa'...")
+                    xpath_sao_chep = "//div[@role='button' and text()='Sao chép khóa']"
+                    khoa_2fa = ""
+                    for attempt in range(60):
+                        try:
+                            btn_sao_chep = wait_120.until(EC.presence_of_element_located((By.XPATH, xpath_sao_chep)))
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", btn_sao_chep)
+                            time.sleep(1)
+                            
+                            spans = driver.find_elements(By.TAG_NAME, "span")
+                            for s in spans:
+                                txt = s.text.strip()
+                                if len(txt) >= 32 and len(txt) <= 50 and " " in txt and txt.replace(" ", "").isalnum():
+                                    khoa_2fa = txt.replace(" ", "")
+                                    break
+                                    
+                            try:
+                                btn_sao_chep.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", btn_sao_chep)
+                            break
+                        except Exception as e:
+                            if attempt == 59: raise Exception(f"Lỗi bước 2 (Sao chép khóa): {e}")
+                            time.sleep(2)
+                            
+                    print(f"[Thread-{flow_type}] Đã click 'Sao chép khóa'. Khóa bóc được: {khoa_2fa}")
+                    
+                    # 3. Đợi thông báo "Đã sao chép vào bộ nhớ tạm"
+                    
+                    print(f"[Thread-{flow_type}] Đang chờ thông báo 'Đã sao chép vào bộ nhớ tạm'...")
+                    xpath_thong_bao = "//span[text()='Đã sao chép vào bộ nhớ tạm']"
+                    for attempt in range(60):
+                        try:
+                            wait_120.until(EC.presence_of_element_located((By.XPATH, xpath_thong_bao)))
+                            break
+                        except Exception as e:
+                            if attempt == 59: raise Exception(f"Lỗi bước 3 (Đợi thông báo sao chép): {e}")
+                            time.sleep(2)
+                    time.sleep(1)
+                    
+                    # 4. Ấn nút "Nhập mã"
+                    
+                    print(f"[Thread-{flow_type}] Đang chờ nút 'Nhập mã'...")
+                    xpath_nhap_ma = "//div[@role='button' and .//span[text()='Nhập mã']]"
+                    for attempt in range(60):
+                        try:
+                            btn_nhap_ma = wait_120.until(EC.presence_of_element_located((By.XPATH, xpath_nhap_ma)))
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", btn_nhap_ma)
+                            time.sleep(1)
+                            try:
+                                btn_nhap_ma.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", btn_nhap_ma)
+                            break
+                        except Exception as e:
+                            if attempt == 59: raise Exception(f"Lỗi bước 4 (Ấn 'Nhập mã'): {e}")
+                            time.sleep(2)
+                            
+                    # 5. Tạo TOTP và nhập mã
+                    print(f"[Thread-{flow_type}] Kiểm tra popup mật khẩu trước bước 5...")
+                    wait_and_handle_password_modal(driver, password, 8)
+                    
+                    print(f"[Thread-{flow_type}] Đang chờ ô nhập mã...")
+                    import pyotp
+                    if not khoa_2fa:
+                        khoa_2fa = fa2_secret
+                        
+                    totp = pyotp.TOTP(khoa_2fa)
+                    
+                    xpath_input_ma = "//input[@type='text' and @maxlength='6']"
+                    for attempt in range(60):
+                        try:
+                            input_ma = wait_120.until(EC.presence_of_element_located((By.XPATH, xpath_input_ma)))
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", input_ma)
+                            time.sleep(1)
                             
                             try:
-                                done_btn = wait_15.until(EC.presence_of_element_located((By.XPATH, "//div[@aria-label='Xong' or @aria-label='Done']")))
-                                time.sleep(1)
-                                try:
-                                    done_btn.click()
-                                except:
-                                    driver.execute_script("arguments[0].click();", done_btn)
-                            except Exception:
-                                pass
-                    except Exception as ex:
-                        print(f"[{uid}] Bỏ qua thêm nhạc do không tìm thấy nút hoặc lỗi: {ex}")
-                else:
-                    print(f"[{uid}] File là Video -> Bỏ qua bước Thêm Nhạc để tránh kẹt UI.")
+                                input_ma.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", input_ma)
+                            time.sleep(0.5)
+                            
+                            # Cập nhật mã mới nhất ngay trước khi gõ để chống hết hạn
+                            ma_6_so = totp.now()
+                            input_ma.send_keys(ma_6_so)
+                            break
+                        except Exception as e:
+                            if attempt == 59: raise Exception(f"Lỗi bước 5 (Điền 6 số): {e}")
+                            time.sleep(2)
+                            
+                    print(f"[Thread-{flow_type}] Đã nhập mã {ma_6_so}")
                     
-                print(f"[{uid}] Đang tìm nút 'Chia sẻ lên tin'...")
-                try:
-                    # Chờ tối đa 30s để nút Chia sẻ hiện ra và có thể click
-                    wait_30 = WebDriverWait(driver, 30)
-                    share_btn = wait_30.until(EC.element_to_be_clickable((By.XPATH, "//div[@aria-label='Chia sẻ lên tin' or @aria-label='Share to Story'] | //span[text()='Chia sẻ lên tin' or text()='Share to Story']/ancestor::div[@role='button']")))
-                    time.sleep(2)
-                    try:
-                        share_btn.click()
-                    except:
-                        driver.execute_script("arguments[0].click();", share_btn)
-                    print(f"[{uid}] Đã ấn Chia sẻ lên tin thành công!")
-                except Exception as ex:
-                    print(f"[{uid}] Không tìm thấy hoặc không thể click nút Chia sẻ: {ex}")
-                        
+                    # 6. Ấn "Tiếp"
+                    print(f"[Thread-{flow_type}] Đang chờ nút 'Tiếp'...")
+                    xpath_tiep = "//div[@role='button' and .//span[text()='Tiếp']]"
+                    for attempt in range(60):
+                        try:
+                            btn_tiep = wait_120.until(EC.presence_of_element_located((By.XPATH, xpath_tiep)))
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", btn_tiep)
+                            time.sleep(1)
+                            try:
+                                btn_tiep.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", btn_tiep)
+                            break
+                        except Exception as e:
+                            if attempt == 59: raise Exception(f"Lỗi bước 6 (Ấn 'Tiếp'): {e}")
+                            time.sleep(2)
+                    
+                    print(f"[Thread-{flow_type}] Kiểm tra popup mật khẩu sau bước 6...")
+                    wait_and_handle_password_modal(driver, password, 8)
+                    
+                    # 7. Thông báo thành công và ấn "Xong"
+                    print(f"[Thread-{flow_type}] Đang chờ popup báo thành công...")
+                    xpath_xong = "//div[@role='button' and .//span[text()='Xong']]"
+                    for attempt in range(60):
+                        try:
+                            btn_xong = wait_120.until(EC.presence_of_element_located((By.XPATH, xpath_xong)))
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", btn_xong)
+                            time.sleep(1)
+                            try:
+                                btn_xong.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", btn_xong)
+                            break
+                        except Exception as e:
+                            if attempt == 59: raise Exception(f"Lỗi bước 7 (Không thấy nút 'Xong' hoặc cài đặt thất bại): {e}")
+                            time.sleep(2)
+                            
+                    print(f"[Thread-{flow_type}] Đã hoàn tất quy trình 2FA.")
+                else:
+                    print(f"[Thread-{flow_type}] Không thể click chọn tài khoản.")
+                
             except Exception as e:
-                print(f"[{uid}] Lỗi khi up story: {e}")
-            
+                print(f"[Thread-{flow_type}] Lỗi khi xử lý 2FA: {e}")
+                
         else:
             print(f"[Thread-{flow_type}] Không thể login, dừng luồng này.")
             return
@@ -308,7 +418,7 @@ def run_account_flow(cookie_line, window_index):
 def main():
     # --- Dùng cứng Account được chỉ định ---
     lines = [
-        "61585946429309|Viqutehu@2567|c_user=61585946429309;datr=qzVWaTiaH3_DbkUsq814ROln;fr=0fOP4AsFOBq6IOUWt.AWcH3rzeaeuibCNyc7O4i5Zuss0FTZviD_JfPLRNSgJhniJ3YkQ.BpVjWr..AAA.0.0.BpVjWw.AWftP_rrajsIjz9JfAZkca7vg6E;ps_l=1;ps_n=1;sb=qzVWaSUO6o3WRychbD4d9uoY;locale=en_US;xs=39%3A0BAB46fc1t_9fg%3A2%3A1767257524%3A-1%3A-1"
+        "61585946429309|Jamesita@69293|c_user=61585946429309;datr=qzVWaTiaH3_DbkUsq814ROln;fr=0fOP4AsFOBq6IOUWt.AWcH3rzeaeuibCNyc7O4i5Zuss0FTZviD_JfPLRNSgJhniJ3YkQ.BpVjWr..AAA.0.0.BpVjWw.AWftP_rrajsIjz9JfAZkca7vg6E;ps_l=1;ps_n=1;sb=qzVWaSUO6o3WRychbD4d9uoY;locale=en_US;xs=39%3A0BAB46fc1t_9fg%3A2%3A1767257524%3A-1%3A-1"
     ]
 
     print(f"[*] Chạy demo trực tiếp với dữ liệu cứng...")

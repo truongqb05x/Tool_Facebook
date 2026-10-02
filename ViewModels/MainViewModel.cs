@@ -622,6 +622,17 @@ namespace FPlusClone.ViewModels
         }
 
         /// <summary>
+        /// Cập nhật 2FA của tài khoản theo UID và lưu file.
+        /// </summary>
+        public void UpdateAccount2FA(string uid, string secret)
+        {
+            var acc = Accounts.FirstOrDefault(a => a.Uid == uid);
+            if (acc == null) return;
+            acc.Fa2 = secret;
+            SaveAccounts();
+        }
+
+        /// <summary>
         /// Lưu danh sách tài khoản bị xóa vào file backup riêng (append, không ghi đè).
         /// Mỗi bản ghi kèm thời điểm xóa và lý do để dễ khôi phục.
         /// </summary>

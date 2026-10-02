@@ -65,6 +65,13 @@ namespace FPlusClone.ViewModels
             set { if (_isChangeRelationship != value) { _isChangeRelationship = value; OnPropertyChanged(); } }
         }
 
+        private bool _isTurnOn2fa = false;
+        public bool IsTurnOn2fa
+        {
+            get => _isTurnOn2fa;
+            set { if (_isTurnOn2fa != value) { _isTurnOn2fa = value; OnPropertyChanged(); } }
+        }
+
         private string _avatarFolderPath = "";
         public string AvatarFolderPath
         {
@@ -196,6 +203,7 @@ namespace FPlusClone.ViewModels
                 IsChangeHighSchool = IsChangeHighSchool,
                 IsChangeUniversity = IsChangeUniversity,
                 IsChangeRelationship = IsChangeRelationship,
+                IsTurnOn2fa = IsTurnOn2fa,
                 SelectedAccountsInfo = accountLines,
                 IsResetDcom = IsResetDcom,
                 ResetDcomAfter = ResetDcomAfter,
@@ -270,6 +278,20 @@ namespace FPlusClone.ViewModels
                                 string uidStr = matchProgress.Groups[1].Value.Trim();
                                 var acc = TaskAccounts.FirstOrDefault(a => a.Account.Uid == uidStr);
                                 if (acc != null) acc.Status = "Thành công";
+                            }
+                            
+                            var match2FA = System.Text.RegularExpressions.Regex.Match(e.Data, @"\[(.*?)\]\s*UI_2FA_UPDATED\|(.*)");
+                            if (match2FA.Success)
+                            {
+                                string uidStr = match2FA.Groups[1].Value.Trim();
+                                string new2fa = match2FA.Groups[2].Value.Trim();
+                                var acc = TaskAccounts.FirstOrDefault(a => a.Account.Uid == uidStr);
+                                if (acc != null) 
+                                {
+                                    acc.Account.Fa2 = new2fa;
+                                    var mainVm = System.Windows.Application.Current.MainWindow.DataContext as MainViewModel;
+                                    mainVm?.UpdateAccount2FA(uidStr, new2fa);
+                                }
                             }
                         });
                     }
