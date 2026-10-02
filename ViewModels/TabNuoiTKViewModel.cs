@@ -126,6 +126,20 @@ namespace FPlusClone.ViewModels
             set { if (_acceptFriendCount != value) { _acceptFriendCount = value; OnPropertyChanged(); } }
         }
 
+        private bool _isAddFriendSuggested;
+        public bool IsAddFriendSuggested
+        {
+            get => _isAddFriendSuggested;
+            set { if (_isAddFriendSuggested != value) { _isAddFriendSuggested = value; OnPropertyChanged(); } }
+        }
+
+        private int _addFriendSuggestedCount = 5;
+        public int AddFriendSuggestedCount
+        {
+            get => _addFriendSuggestedCount;
+            set { if (_addFriendSuggestedCount != value) { _addFriendSuggestedCount = value; OnPropertyChanged(); } }
+        }
+
         private bool _isUpStory;
         public bool IsUpStory
         {
@@ -280,6 +294,8 @@ namespace FPlusClone.ViewModels
                 { "IsRandomClick", IsRandomClick },
                 { "IsAcceptFriend", IsAcceptFriend },
                 { "AcceptFriendCount", AcceptFriendCount },
+                { "IsAddFriendSuggested", IsAddFriendSuggested },
+                { "AddFriendSuggestedCount", AddFriendSuggestedCount },
                 { "IsUpStory", IsUpStory },
                 { "StoryFolderPath", StoryFolderPath },
                 { "IsViewStory", IsViewStory },
@@ -326,6 +342,8 @@ namespace FPlusClone.ViewModels
                         if (config.TryGetValue("IsRandomClick", out v)) IsRandomClick = v.GetBoolean();
                         if (config.TryGetValue("IsAcceptFriend", out v)) IsAcceptFriend = v.GetBoolean();
                         if (config.TryGetValue("AcceptFriendCount", out v)) AcceptFriendCount = v.GetInt32();
+                        if (config.TryGetValue("IsAddFriendSuggested", out v)) IsAddFriendSuggested = v.GetBoolean();
+                        if (config.TryGetValue("AddFriendSuggestedCount", out v)) AddFriendSuggestedCount = v.GetInt32();
                         if (config.TryGetValue("IsUpStory", out v)) IsUpStory = v.GetBoolean();
                         if (config.TryGetValue("StoryFolderPath", out v)) StoryFolderPath = v.GetString();
                         if (config.TryGetValue("IsViewStory", out v)) IsViewStory = v.GetBoolean();
@@ -395,6 +413,8 @@ namespace FPlusClone.ViewModels
                 
                 IsAcceptFriend = IsAcceptFriend,
                 AcceptFriendCount = AcceptFriendCount,
+                IsAddFriendSuggested = IsAddFriendSuggested,
+                AddFriendSuggestedCount = AddFriendSuggestedCount,
                 IsUpStory = IsUpStory,
                 StoryFolderPath = StoryFolderPath,
                 IsViewStory = IsViewStory,

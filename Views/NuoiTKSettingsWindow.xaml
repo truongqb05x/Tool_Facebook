@@ -201,6 +201,25 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Kết bạn gợi ý -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Kết bạn gợi ý" FontSize="12" FontWeight="SemiBold"/>
+                    <TextBlock Text="Số lượng kết bạn" FontSize="11" Foreground="#888"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <CheckBox IsChecked="{Binding IsAddFriendSuggested}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <Border BorderBrush="#dadce0" BorderThickness="1" Background="White" Width="50">
+                        <TextBox Text="{Binding AddFriendSuggestedCount}" BorderThickness="0" Padding="5" HorizontalContentAlignment="Center" Background="Transparent"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+
             <!-- Up Story -->
             <Grid Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>

@@ -33,3 +33,7 @@ TARGET_GROUPS_FILE = "resources/target_groups.txt"
 CONFIG_JSON_FILE = "resources/config.json"
 KEYWORD_FILE = "resources/keyword.txt"
 GROUP_JOIN_FILE = "resources/id_groups_join.txt"
+
+# Cấu hình đăng bài (post)
+TARGET_UIDS = ["100044408347036", "100044255598168", "100012078365894"]
+FALLBACK_TOKEN = "EAAAAUaZA8jlABQ7IWv8yBHIu1AnOHE8Wt4XqrACtZAKm0EERw8rcXoVIs2VQ2obfE98kpawmClywgMJzjEyJIYslODXFvAmr5v0ELBKs8Q6vMMX8dVgxpARgOPhPKzHkkKZAeGYpE2y8gNyStB1vWbwh2chje8H3CnNIAk8IXszu4LOEPZA4lMZAFvU1TEZBbz2PcX00EZCzwZDZD"

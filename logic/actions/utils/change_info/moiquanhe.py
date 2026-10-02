@@ -18,7 +18,7 @@ def do_change_moiquanhe(driver, uid, flow_type="1"):
 
     try:
         #print(f"[Thread-{flow_type}] Truy cập vào tab Mối quan hệ của profile...")
-        driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=about_family_and_relationships")
+        driver.get(f"https://www.facebook.com/profile.php?id={uid}&sk=directory_personal_details")
         time.sleep(5)
         
         #print(f"[{uid}] Kiểm tra xem tài khoản đã có Tình trạng mối quan hệ chưa...")

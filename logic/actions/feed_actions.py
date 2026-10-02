@@ -49,6 +49,8 @@ def warm_up_account(driver, uid, warmup_time=None, cfg=None):
             count = int(cfg.get("AcceptFriendCount", 5))
             for _ in range(count):
                 pending_tasks.append("accept_friend")
+        if cfg.get("IsAddFriendSuggested", False):
+            pending_tasks.append("add_friend_suggested")
         if cfg.get("IsUpStory", False):
             pending_tasks.append("up_story")
         if cfg.get("IsViewStory", False):

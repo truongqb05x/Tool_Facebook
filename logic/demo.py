@@ -70,7 +70,7 @@ def run_account_flow(cookie_line, window_index):
         mapping_ua = ar.load_ua_mapping()
         user_agent = get_assigned_ua(uid, mapping_ua)
 
-    proxy_str = "mienbac.vnproxy.com:15952:8K35Fz:4jIe50"
+    proxy_str = "mienbac.vnproxy.com:61369:T2NgwN:nAyfMv"
     proxy_config = parse_proxy_str(proxy_str)
     print(f"[Thread-{flow_type}] Sử dụng Proxy chỉ định: {proxy_str}")
 
@@ -158,6 +158,98 @@ def run_account_flow(cookie_line, window_index):
 
         if login_verified:
             print(f"[Thread-{flow_type}] Xác minh login thành công.")
+            print(f"[Thread-{flow_type}] Chuyển hướng đến trang gợi ý kết bạn...")
+            driver.get("https://www.facebook.com/friends/suggestions")
+            
+            try:
+                # Wait thông minh tối đa 60s cho đến khi xuất hiện thông báo hết gợi ý hoặc có nút thêm bạn bè
+                WebDriverWait(driver, 60).until(
+                    lambda d: "Lời mời và gợi ý kết bạn sẽ hiển thị tại đây." in d.page_source or 
+                              "Thêm bạn bè" in d.page_source or 
+                              "Add Friend" in d.page_source
+                )
+            except:
+                pass # Hết thời gian chờ 60s
+            
+            time.sleep(1) # Chờ thêm 1s để DOM ổn định hẳn
+
+            if "Lời mời và gợi ý kết bạn sẽ hiển thị tại đây." in driver.page_source:
+                print(f"[Thread-{flow_type}] Không có gợi ý lời mời nào.")
+                time.sleep(10)
+                print(f"[Thread-{flow_type}] Chuyển hướng đến https://www.facebook.com/lichsungoaitruyen/")
+                driver.get("https://www.facebook.com/lichsungoaitruyen/")
+                time.sleep(5)
+                
+                print(f"[Thread-{flow_type}] Bắt đầu lướt tìm khối cảm xúc...")
+                found = False
+                for _ in range(50): # Cuộn tối đa 50 lần
+                    try:
+                        # Tìm element có aria-label="Xem ai đã bày tỏ cảm xúc về tin này"
+                        el = driver.find_element(By.XPATH, "//*[@aria-label='Xem ai đã bày tỏ cảm xúc về tin này']")
+                        # Cuộn element vào giữa màn hình
+                        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", el)
+                        time.sleep(2)
+                        
+                        try:
+                            el.click()
+                        except:
+                            driver.execute_script("arguments[0].click();", el)
+                            
+                        print(f"[Thread-{flow_type}] Đã click vào khối cảm xúc thành công.")
+                        found = True
+                        
+                        print(f"[Thread-{flow_type}] Đợi modal danh sách người thả cảm xúc...")
+                        try:
+                            WebDriverWait(driver, 120).until(
+                                lambda d: len(d.find_elements(By.XPATH, "//div[@aria-label='Thêm bạn bè']")) > 0
+                            )
+                            time.sleep(3) # Đợi danh sách load hoàn toàn
+                            add_btns = driver.find_elements(By.XPATH, "//div[@aria-modal='true']//div[@aria-label='Thêm bạn bè'] | //div[@aria-label='Thêm bạn bè']")
+                            print(f"[Thread-{flow_type}] Tìm thấy {len(add_btns)} nút Thêm bạn bè trong danh sách.")
+                            
+                            if add_btns:
+                                # HƯỚNG DẪN: Nếu muốn click số lượng nhiều (VD: 5 người), 
+                                # bạn có thể dùng vòng lặp như sau thay vì chỉ lấy add_btns[0]:
+                                # for btn in add_btns[:5]: 
+                                btn = add_btns[0]
+                                try:
+                                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+                                    time.sleep(1)
+                                    driver.execute_script("arguments[0].click();", btn)
+                                    print(f"[Thread-{flow_type}] Đã gửi 1 lời mời kết bạn duy nhất.")
+                                    time.sleep(1.5)
+                                except Exception as e:
+                                    print(f"[Thread-{flow_type}] Lỗi khi click nút Thêm bạn bè: {e}")
+                        except Exception as e:
+                            print(f"[Thread-{flow_type}] Không tải được modal danh sách sau 120s.")
+                            
+                        break
+                    except Exception:
+                        # Cuộn xuống từ từ
+                        driver.execute_script("window.scrollBy(0, 400);")
+                        time.sleep(1.5)
+                        
+                if not found:
+                    print(f"[Thread-{flow_type}] Không tìm thấy khối cảm xúc trên trang.")
+            else:
+                print(f"[Thread-{flow_type}] Đã tải trang gợi ý kết bạn.")
+                try:
+                    sugg_btns = driver.find_elements(By.XPATH, "//div[@aria-label='Thêm bạn bè']")
+                    if sugg_btns:
+                        print(f"[Thread-{flow_type}] Tìm thấy {len(sugg_btns)} nút Thêm bạn bè ở trang gợi ý.")
+                        # HƯỚNG DẪN: Nếu muốn click số lượng nhiều (VD: 5 người), 
+                        # bạn có thể dùng vòng lặp như sau thay vì chỉ lấy sugg_btns[0]:
+                        # for btn in sugg_btns[:5]: 
+                        btn = sugg_btns[0]
+                        try:
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+                            time.sleep(1)
+                            driver.execute_script("arguments[0].click();", btn)
+                            print(f"[Thread-{flow_type}] Đã gửi 1 lời mời kết bạn từ trang gợi ý.")
+                        except Exception as e:
+                            print(f"[Thread-{flow_type}] Lỗi khi click Thêm bạn bè: {e}")
+                except Exception as e:
+                    pass
         else:
             print(f"[Thread-{flow_type}] Không thể login, dừng luồng này.")
             return
@@ -174,7 +266,7 @@ def run_account_flow(cookie_line, window_index):
 def main():
     # --- Dùng cứng Account được chỉ định ---
     lines = [
-        "61579448764779|Viqutehu@2567|fr=1TyxyKtMelNYYBsQb.AWeCyjzsQsKm9Vg45bvWQNuwh9rVuugpbVH7Pdi5AVz2eS7sJbs.Bpuxk2..AAA.0.0.BqnlVi.AWf614IxIjbw7464cfGSOVD4bEs; ps_n=1; dpr=2.25; datr=KRm7aVlnR-VpTfv-lVmIDHWo; xs=33:P1qU3cl6ZvGgdA:2:1773869372:-1:-1; ps_l=1; wd=500x569; c_user=61579448764779; sb=5x6Yaq9Isq0O9Lx998sgyolW"
+        "61585946429309|Viqutehu@2567|c_user=61585946429309;datr=qzVWaTiaH3_DbkUsq814ROln;fr=0fOP4AsFOBq6IOUWt.AWcH3rzeaeuibCNyc7O4i5Zuss0FTZviD_JfPLRNSgJhniJ3YkQ.BpVjWr..AAA.0.0.BpVjWw.AWftP_rrajsIjz9JfAZkca7vg6E;ps_l=1;ps_n=1;sb=qzVWaSUO6o3WRychbD4d9uoY;locale=en_US;xs=39%3A0BAB46fc1t_9fg%3A2%3A1767257524%3A-1%3A-1"
     ]
 
     print(f"[*] Chạy demo trực tiếp với dữ liệu cứng...")

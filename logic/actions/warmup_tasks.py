@@ -1,8 +1,13 @@
 from actions.utils.read_notifications import read_one_random_notification
 from actions.utils.chat_two_ways import run_two_way_chat
-
-def execute_warmup_task(task_name, driver, uid, cfg):
-    import os
+from actions.utils.login import verify_and_relogin
+import os
+import random
+from config.config import TARGET_UIDS, FALLBACK_TOKEN
+from utils.file_utils import get_valid_tokens_from_accounts
+def execute_warmup_task(task_name, driver, uid, cfg):    
+    if not verify_and_relogin(driver, uid, cfg):
+        return
     if task_name == "read_noti":
         read_one_random_notification(driver, uid)
     elif task_name == "chat":
@@ -14,6 +19,14 @@ def execute_warmup_task(task_name, driver, uid, cfg):
             accept_friends(driver, uid, 1)
         except Exception as e:
             print(f"[{uid}] Lỗi khi chạy Chấp nhận kết bạn: {e}")
+    elif task_name == "add_friend_suggested":
+        try:
+            from actions.utils.add_frend import add_suggested_friends
+            count = int(cfg.get("AddFriendSuggestedCount", 5))
+            print(f"[{uid}] Kết bạn từ gợi ý ({count} người)...")
+            add_suggested_friends(driver, uid, count)
+        except Exception as e:
+            print(f"[{uid}] Lỗi khi chạy Kết bạn gợi ý: {e}")
     elif task_name == "up_story":
         try:
             from actions.utils.story.up_story import up_story, can_up_story, record_story
@@ -93,43 +106,26 @@ def execute_warmup_task(task_name, driver, uid, cfg):
                     post_success = post_manual_content(driver, uid, post_content=content, image_path=img_path, is_feeling=is_feeling, is_checkin=is_checkin, is_tag=is_tag)
                 elif mode == 2:
                     print(f"[{uid}] Lấy bài viết ngẫu nhiên từ API Graph...")
-                    import random
-                    target_uids = ["100044408347036", "100044255598168", "100012078365894"]
-                    target_uid_api = random.choice(target_uids)
+                    target_uid_api = random.choice(TARGET_UIDS)
                     accounts_path = os.path.join(os.getcwd(), "accounts.json")
-                    accounts_data = None
-                    valid_tokens = []
-                    try:
-                        with open(accounts_path, 'r', encoding='utf-8') as f:
-                            accounts_data = json.load(f)
-                            for acc in accounts_data.get("Accounts", []):
-                                t = acc.get("Token", "").strip()
-                                if t:
-                                    valid_tokens.append(acc)
-                    except:
-                        pass
+                    valid_tokens = get_valid_tokens_from_accounts(accounts_path)
+                    
                     post_data = None
-                    fallback_token = "EAAAAUaZA8jlABQ7IWv8yBHIu1AnOHE8Wt4XqrACtZAKm0EERw8rcXoVIs2VQ2obfE98kpawmClywgMJzjEyJIYslODXFvAmr5v0ELBKs8Q6vMMX8dVgxpARgOPhPKzHkkKZAeGYpE2y8gNyStB1vWbwh2chje8H3CnNIAk8IXszu4LOEPZA4lMZAFvU1TEZBbz2PcX00EZCzwZDZD"
                     if not valid_tokens:
                         print(f"[{uid}] Không tìm thấy Token nào trong danh sách tài khoản, dùng token mặc định...")
-                        post_data = get_random_post(target_uid_api, fallback_token)
+                        post_data = get_random_post(target_uid_api, FALLBACK_TOKEN)
                     else:
                         random.shuffle(valid_tokens)
                         for acc_obj in list(valid_tokens):
                             access_token = acc_obj.get("Token", "")
-                            print(f"[{uid}] Thử lấy bài bằng Token của UID: {acc_obj.get('Uid')}")
                             post_data = get_random_post(target_uid_api, access_token)
                             if post_data:
                                 print(f"[{uid}] Token hợp lệ!")
                                 break
                             else:
                                 print(f"[{uid}] Token lỗi, tiến hành xóa token này...")
-                                acc_obj["Token"] = ""
-                                try:
-                                    with open(accounts_path, 'w', encoding='utf-8') as fw:
-                                        json.dump(accounts_data, fw, ensure_ascii=False, indent=2)
-                                except Exception as e:
-                                    print(f"[{uid}] Lỗi khi cập nhật accounts.json: {e}")
+                                from utils.file_utils import remove_token_from_accounts
+                                remove_token_from_accounts(accounts_path, acc_obj.get("Uid"))
                     if post_data:
                         print(f"[{uid}] Bài viết lấy được từ API: {post_data['message'][:30]}...")
                         post_success = post_manual_content(driver, uid, post_content=post_data["message"], image_path=post_data["image_path"], is_feeling=is_feeling, is_checkin=is_checkin, is_tag=is_tag)

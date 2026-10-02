@@ -3,19 +3,12 @@ import time
 import random
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from utils.waiter import wait_for_element_with_retry, wait_for_clickable_with_retry
+from selenium.webdriver.common.action_chains import ActionChains
+from utils.waiter import wait_for_element_with_retry
 
 from actions.utils.change_language_vie import check_and_change_language_to_vi
 
 def login_with_credentials(driver, username, password, fa2_secret=None):
-    """
-    Login vào Facebook bằng tài khoản và mật khẩu.
-    Tự động xử lý 2FA (TOTP) nếu cung cấp fa2_secret,
-    xử lý trang remember_browser sau 2FA,
-    và dismiss modal "Nhớ mật khẩu" sau khi login thành công.
-    """
-    from selenium.webdriver.common.action_chains import ActionChains
 
     def _js_click(el):
         driver.execute_script("""
@@ -111,6 +104,24 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
 
             is_login    = "login"     in url
             is_two_step = "two_step"  in url or "two_factor" in url
+
+            # Kiểm tra xem có thông báo sai thông tin / bị chặn đăng nhập không
+            if is_login:
+                try:
+                    error_msg_xpaths = [
+                        "//span[contains(., 'The login information you entered is incorrect')]",
+                        "//span[contains(., 'Thông tin đăng nhập bạn nhập không chính xác')]",
+                        "//span[contains(., 'Thông tin đăng nhập bạn đã nhập không chính xác')]",
+                        "//a[contains(., 'Find your account and log in.')]",
+                        "//a[contains(., 'Tìm tài khoản của bạn và đăng nhập')]"
+                    ]
+                    for xp in error_msg_xpaths:
+                        error_elements = driver.find_elements(By.XPATH, xp)
+                        if error_elements and any(el.is_displayed() for el in error_elements):
+                            print(f"[{username}] ❌ Bị chặn đăng nhập (Sai thông tin đăng nhập).")
+                            return "BLOCKED_LOGIN"
+                except Exception:
+                    pass
 
             # checkpoint_src=any → thành công sau 2FA trust device
             if "checkpoint_src" in url:
@@ -311,3 +322,30 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
     except Exception as e:
         print(f"[{username}] ❌ Login thất bại.")
         return False
+
+def verify_and_relogin(driver, uid, cfg):
+    curr_url = driver.current_url or ""
+    cookies = driver.get_cookies()
+    is_logged_in = False
+    if any(c['name'] == 'c_user' for c in cookies):
+        if "login" not in curr_url and "checkpoint" not in curr_url:
+            is_logged_in = True
+            
+    if not is_logged_in:
+        print(f"[{uid}] Phát hiện mất phiên đăng nhập, tiến hành login lại...")
+        acc_infos = cfg.get("SelectedAccountsInfo", [])
+        password = ""
+        fa2 = ""
+        for line in acc_infos:
+            parts = line.split("|")
+            if len(parts) > 0 and parts[0] == uid:
+                if len(parts) > 1: password = parts[1]
+                if len(parts) > 2: fa2 = parts[2]
+                break
+        
+        res = login_with_credentials(driver, uid, password, fa2_secret=fa2)
+        if not res:
+            print(f"[{uid}] Đăng nhập lại thất bại, bỏ qua task này.")
+            return False
+        print(f"[{uid}] Đăng nhập lại thành công!")
+    return True

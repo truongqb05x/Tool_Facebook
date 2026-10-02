@@ -102,6 +102,7 @@ def up_story(driver, uid, image_path=None, image_folder=None):
             try:
                 import pyautogui
                 import pyperclip
+                pyautogui.FAILSAFE = False
             except ImportError:
                 print(f"[{uid}] THIẾU THƯ VIỆN: Chạy 'pip install pyautogui pyperclip'")
                 return
