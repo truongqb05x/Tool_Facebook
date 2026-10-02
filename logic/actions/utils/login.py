@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from utils.waiter import wait_for_element_with_retry
-
+import json, os
 from actions.utils.change_language_vie import check_and_change_language_to_vi
 
 def login_with_credentials(driver, username, password, fa2_secret=None):
@@ -348,4 +348,22 @@ def verify_and_relogin(driver, uid, cfg):
             print(f"[{uid}] Đăng nhập lại thất bại, bỏ qua task này.")
             return False
         print(f"[{uid}] Đăng nhập lại thành công!")
+        
+        try:
+            settings_path = os.path.join(os.path.dirname(os.getcwd()), "settings.json")
+            get_cookie = False
+            if os.path.exists(settings_path):
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    settings_data = json.load(f)
+                    get_cookie = settings_data.get("getCookieOnLogin", False)
+            if get_cookie:
+                print(f"[{uid}] Đang lấy cookie mới và lưu vào accounts.json...")
+                cookies = driver.get_cookies()
+                cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
+                from utils.file_utils import update_account_cookie
+                update_account_cookie(uid, cookie_str)
+                print(f"[{uid}] Đã cập nhật cookie thành công!")
+        except Exception as e:
+            print(f"[{uid}] Lỗi khi lấy hoặc lưu cookie: {e}")
+            
     return True

@@ -31,7 +31,7 @@ namespace FPlusClone.Models
         [JsonPropertyName("disableImageLoad")]
         public bool DisableImageLoad { get; set; } = false;
 
-        [JsonPropertyName("hideChrome")]
-        public bool HideChrome { get; set; } = false;
+        [JsonPropertyName("getCookieOnLogin")]
+        public bool GetCookieOnLogin { get; set; } = false;
     }
 }

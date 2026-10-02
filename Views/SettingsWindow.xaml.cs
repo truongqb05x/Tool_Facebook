@@ -57,8 +57,8 @@ namespace FPlusClone.Views
         private bool _disableImageLoad;
         public bool DisableImageLoad { get => _disableImageLoad; set => SetProperty(ref _disableImageLoad, value); }
 
-        private bool _hideChrome;
-        public bool HideChrome { get => _hideChrome; set => SetProperty(ref _hideChrome, value); }
+        private bool _getCookieOnLogin;
+        public bool GetCookieOnLogin { get => _getCookieOnLogin; set => SetProperty(ref _getCookieOnLogin, value); }
 
         private string _profilePath;
         public string ProfilePath { get => _profilePath; set => SetProperty(ref _profilePath, value); }
@@ -106,7 +106,7 @@ namespace FPlusClone.Views
             ProxyMethod      = s.ProxyMethod;
             KiotProxyKey     = s.KiotProxyKey;
             DisableImageLoad = s.DisableImageLoad;
-            HideChrome       = s.HideChrome;
+            GetCookieOnLogin = s.GetCookieOnLogin;
             ProfilePath      = s.ProfilePath;
 
             SaveCommand = new RelayCommand(_ =>
@@ -120,7 +120,7 @@ namespace FPlusClone.Views
                     ProxyMethod      = ProxyMethod,
                     KiotProxyKey     = KiotProxyKey ?? "",
                     DisableImageLoad = DisableImageLoad,
-                    HideChrome       = HideChrome,
+                    GetCookieOnLogin = GetCookieOnLogin,
                     ProfilePath      = ProfilePath ?? ""
                 });
                 DialogResult = true;

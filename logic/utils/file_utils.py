@@ -1,5 +1,6 @@
 # file_utils.py
-
+import json
+import os
 def read_file(path):
     try:
         with open(path, "r", encoding="utf-8-sig") as f:
@@ -47,3 +48,28 @@ def remove_token_from_accounts(accounts_path, uid):
                 json.dump(accounts_data, fw, ensure_ascii=False, indent=2)
     except:
         pass
+
+def update_account_cookie(uid, cookie_str):
+    # accounts.json is usually at the base directory, same level as the exe
+    # Since python scripts run in `Logic`, base directory is `..`
+    accounts_path = os.path.join(os.path.dirname(os.getcwd()), "accounts.json")
+    if not os.path.exists(accounts_path):
+        return
+
+    try:
+        with open(accounts_path, 'r', encoding='utf-8') as f:
+            app_data = json.load(f)
+            
+        modified = False
+        accounts = app_data.get("Accounts", [])
+        for acc in accounts:
+            if acc.get("Uid") == uid:
+                acc["Cookie"] = cookie_str
+                modified = True
+                break
+                
+        if modified:
+            with open(accounts_path, 'w', encoding='utf-8') as fw:
+                json.dump(app_data, fw, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[{uid}] Lỗi khi cập nhật cookie vào accounts.json: {e}")

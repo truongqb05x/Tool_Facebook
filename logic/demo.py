@@ -150,106 +150,148 @@ def run_account_flow(cookie_line, window_index):
                     login_done.set()
                 login_thread = threading.Thread(target=_do_login, daemon=True)
                 login_thread.start()
-
                 login_thread.join(35)
-
 
                 login_verified = verify_uid(driver, uid)
 
         if login_verified:
             print(f"[Thread-{flow_type}] Xác minh login thành công.")
-            print(f"[Thread-{flow_type}] Chuyển hướng đến trang gợi ý kết bạn...")
-            driver.get("https://www.facebook.com/friends/suggestions")
             
+            print(f"[Thread-{flow_type}] Bắt đầu test up story trực tiếp...")
             try:
-                # Wait thông minh tối đa 60s cho đến khi xuất hiện thông báo hết gợi ý hoặc có nút thêm bạn bè
-                WebDriverWait(driver, 60).until(
-                    lambda d: "Lời mời và gợi ý kết bạn sẽ hiển thị tại đây." in d.page_source or 
-                              "Thêm bạn bè" in d.page_source or 
-                              "Add Friend" in d.page_source
-                )
-            except:
-                pass # Hết thời gian chờ 60s
-            
-            time.sleep(1) # Chờ thêm 1s để DOM ổn định hẳn
-
-            if "Lời mời và gợi ý kết bạn sẽ hiển thị tại đây." in driver.page_source:
-                print(f"[Thread-{flow_type}] Không có gợi ý lời mời nào.")
-                time.sleep(10)
-                print(f"[Thread-{flow_type}] Chuyển hướng đến https://www.facebook.com/lichsungoaitruyen/")
-                driver.get("https://www.facebook.com/lichsungoaitruyen/")
-                time.sleep(5)
+                print(f"[{uid}] Đang tìm nút Tạo tin...")
+                driver.get("https://www.facebook.com/")
                 
-                print(f"[Thread-{flow_type}] Bắt đầu lướt tìm khối cảm xúc...")
-                found = False
-                for _ in range(50): # Cuộn tối đa 50 lần
+                wait_60 = WebDriverWait(driver, 60)
+                
+                # Chờ nút Tạo tin hiện rõ trên màn hình
+                create_story_btn = wait_60.until(EC.visibility_of_element_located((By.XPATH, "//a[contains(@href, '/stories/create')] | //a[@aria-label='Tạo tin' or @aria-label='Create Story']")))
+                time.sleep(2) # Cho React nạp xong event
+                driver.execute_script("arguments[0].click();", create_story_btn)
+                print(f"[{uid}] Đã click vào nút Tạo tin thành công!")
+                
+                print(f"[{uid}] Chờ tải trang Tạo tin (tối đa 180s)...")
+                wait_180 = WebDriverWait(driver, 180)
+                wait_180.until(EC.url_contains("/stories/create"))
+                
+                print(f"[{uid}] Chờ giao diện load xong (tìm thẻ h1 'Tin của bạn')...")
+                wait_180.until(EC.presence_of_element_located((By.XPATH, "//h1[text()='Tin của bạn' or text()='Your Story']")))
+                
+                print(f"[{uid}] Đang tìm nút Loại tin (Ảnh/Chữ)...")
+                xpath_photo_story = "//div[@aria-label='Tạo tin có ảnh hoặc video' or contains(@aria-label, 'Photo Story')] | //span[text()='Tạo tin có ảnh hoặc video' or text()='Create a Photo Story']/ancestor::div[@role='button'] | //span[text()='Tạo tin có ảnh hoặc video' or text()='Create a Photo Story']"
+                story_type_btn = wait_180.until(EC.presence_of_element_located((By.XPATH, xpath_photo_story)))
+                
+                import os
+                image_path = r"C:\Users\ADMIN\Documents\106689-673786365_medium.mp4"
+                print(f"[{uid}] Dùng file ảnh/video cố định: {image_path}")
+                
+                print(f"[{uid}] Tìm thẻ input file để nhét file ngầm (tránh dùng OS Dialog)...")
+                try:
+                    # Tìm tất cả các thẻ input dạng file
+                    file_inputs = wait_60.until(EC.presence_of_all_elements_located((By.XPATH, "//input[@type='file']")))
+                    print(f"[{uid}] [DEBUG] Đã tìm thấy {len(file_inputs)} thẻ <input type='file'> trên trang.")
+                    
+                    if file_inputs:
+                        success = False
+                        # Đảo ngược danh sách file_inputs để lấy thẻ xuất hiện sau cùng (thường là thẻ thật)
+                        file_inputs.reverse()
+                        
+                        for idx, inp in enumerate(file_inputs):
+                            accept_attr = inp.get_attribute("accept") or "Không có"
+                            
+                            # Tìm đúng thẻ input dùng để up ảnh/video
+                            if "image" in accept_attr or "video" in accept_attr or accept_attr == "Không có":
+                                print(f"[{uid}] [DEBUG] => Đã tìm thấy thẻ input (từ dưới lên). Tiến hành nạp file...")
+                                try:
+                                    driver.execute_script("arguments[0].style.display = 'block'; arguments[0].style.opacity = 1;", inp)
+                                    
+                                    # Selenium send_keys sẽ tự động nạp file
+                                    inp.send_keys(image_path)
+                                    print(f"[{uid}] [DEBUG] Đã nạp file thành công vào thẻ input!")
+                                    
+                                    # Bắn nhẹ event change phòng hờ
+                                    driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", inp)
+                                    
+                                    success = True
+                                    break # Nhét 1 phát ăn luôn, xong thoát vòng lặp
+                                except Exception as inner_e:
+                                    print(f"[{uid}] [DEBUG] Lỗi khi nạp thẻ: {inner_e}")
+                        
+                        if success:
+                            print(f"[{uid}] [DEBUG] Đã tiêm xong. Chờ 10s để giao diện React nạp và xử lý media...")
+                            time.sleep(10)
+                        else:
+                            print(f"[{uid}] Không thể tiêm file vào bất kỳ thẻ nào.")
+                            return
+                    else:
+                        print(f"[{uid}] Không tìm thấy thẻ input type='file' nào trên trang.")
+                        return
+                except Exception as e:
+                    print(f"[{uid}] Lỗi khi up ảnh/video bằng thẻ input: {e}")
+                    return
+                
+                # --- NẾU LÀ VIDEO THÌ THƯỜNG KHÔNG CẦN / KHÔNG THỂ THÊM NHẠC ---
+                is_video = any(image_path.lower().endswith(ext) for ext in ['.mp4', '.mov', '.avi', '.webm', '.mkv'])
+                
+                if not is_video:
+                    print(f"[{uid}] Chờ giao diện chỉnh sửa và tìm nút 'Thêm nhạc' (tối đa 15s)...")
                     try:
-                        # Tìm element có aria-label="Xem ai đã bày tỏ cảm xúc về tin này"
-                        el = driver.find_element(By.XPATH, "//*[@aria-label='Xem ai đã bày tỏ cảm xúc về tin này']")
-                        # Cuộn element vào giữa màn hình
-                        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", el)
+                        # Rút ngắn thời gian chờ nút thêm nhạc xuống 15s để không bị kẹt
+                        wait_15 = WebDriverWait(driver, 15)
+                        add_music_btn = wait_15.until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(), 'Thêm nhạc') or contains(text(), 'Add Music')]")))
                         time.sleep(2)
                         
                         try:
-                            el.click()
+                            add_music_btn.click()
                         except:
-                            driver.execute_script("arguments[0].click();", el)
+                            driver.execute_script("arguments[0].click();", add_music_btn)
                             
-                        print(f"[Thread-{flow_type}] Đã click vào khối cảm xúc thành công.")
-                        found = True
+                        print(f"[{uid}] Chờ popup tìm nhạc xuất hiện...")
+                        search_music_input = wait_15.until(EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Tìm kiếm nhạc' or @placeholder='Search music' or @aria-label='Tìm kiếm nhạc']")))
+                        time.sleep(3)
                         
-                        print(f"[Thread-{flow_type}] Đợi modal danh sách người thả cảm xúc...")
-                        try:
-                            WebDriverWait(driver, 120).until(
-                                lambda d: len(d.find_elements(By.XPATH, "//div[@aria-label='Thêm bạn bè']")) > 0
-                            )
-                            time.sleep(3) # Đợi danh sách load hoàn toàn
-                            add_btns = driver.find_elements(By.XPATH, "//div[@aria-modal='true']//div[@aria-label='Thêm bạn bè'] | //div[@aria-label='Thêm bạn bè']")
-                            print(f"[Thread-{flow_type}] Tìm thấy {len(add_btns)} nút Thêm bạn bè trong danh sách.")
+                        song_rows_xpath = "//div[@data-visualcompletion='ignore-dynamic']/div[@role='button']"
+                        song_rows = driver.find_elements(By.XPATH, song_rows_xpath)
+                        
+                        if song_rows:
+                            selected_song = random.choice(song_rows)
+                            try:
+                                selected_song.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", selected_song)
+                            print(f"[{uid}] Đã chọn nhạc thành công!")
                             
-                            if add_btns:
-                                # HƯỚNG DẪN: Nếu muốn click số lượng nhiều (VD: 5 người), 
-                                # bạn có thể dùng vòng lặp như sau thay vì chỉ lấy add_btns[0]:
-                                # for btn in add_btns[:5]: 
-                                btn = add_btns[0]
+                            try:
+                                done_btn = wait_15.until(EC.presence_of_element_located((By.XPATH, "//div[@aria-label='Xong' or @aria-label='Done']")))
+                                time.sleep(1)
                                 try:
-                                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
-                                    time.sleep(1)
-                                    driver.execute_script("arguments[0].click();", btn)
-                                    print(f"[Thread-{flow_type}] Đã gửi 1 lời mời kết bạn duy nhất.")
-                                    time.sleep(1.5)
-                                except Exception as e:
-                                    print(f"[Thread-{flow_type}] Lỗi khi click nút Thêm bạn bè: {e}")
-                        except Exception as e:
-                            print(f"[Thread-{flow_type}] Không tải được modal danh sách sau 120s.")
-                            
-                        break
-                    except Exception:
-                        # Cuộn xuống từ từ
-                        driver.execute_script("window.scrollBy(0, 400);")
-                        time.sleep(1.5)
-                        
-                if not found:
-                    print(f"[Thread-{flow_type}] Không tìm thấy khối cảm xúc trên trang.")
-            else:
-                print(f"[Thread-{flow_type}] Đã tải trang gợi ý kết bạn.")
+                                    done_btn.click()
+                                except:
+                                    driver.execute_script("arguments[0].click();", done_btn)
+                            except Exception:
+                                pass
+                    except Exception as ex:
+                        print(f"[{uid}] Bỏ qua thêm nhạc do không tìm thấy nút hoặc lỗi: {ex}")
+                else:
+                    print(f"[{uid}] File là Video -> Bỏ qua bước Thêm Nhạc để tránh kẹt UI.")
+                    
+                print(f"[{uid}] Đang tìm nút 'Chia sẻ lên tin'...")
                 try:
-                    sugg_btns = driver.find_elements(By.XPATH, "//div[@aria-label='Thêm bạn bè']")
-                    if sugg_btns:
-                        print(f"[Thread-{flow_type}] Tìm thấy {len(sugg_btns)} nút Thêm bạn bè ở trang gợi ý.")
-                        # HƯỚNG DẪN: Nếu muốn click số lượng nhiều (VD: 5 người), 
-                        # bạn có thể dùng vòng lặp như sau thay vì chỉ lấy sugg_btns[0]:
-                        # for btn in sugg_btns[:5]: 
-                        btn = sugg_btns[0]
-                        try:
-                            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
-                            time.sleep(1)
-                            driver.execute_script("arguments[0].click();", btn)
-                            print(f"[Thread-{flow_type}] Đã gửi 1 lời mời kết bạn từ trang gợi ý.")
-                        except Exception as e:
-                            print(f"[Thread-{flow_type}] Lỗi khi click Thêm bạn bè: {e}")
-                except Exception as e:
-                    pass
+                    # Chờ tối đa 30s để nút Chia sẻ hiện ra và có thể click
+                    wait_30 = WebDriverWait(driver, 30)
+                    share_btn = wait_30.until(EC.element_to_be_clickable((By.XPATH, "//div[@aria-label='Chia sẻ lên tin' or @aria-label='Share to Story'] | //span[text()='Chia sẻ lên tin' or text()='Share to Story']/ancestor::div[@role='button']")))
+                    time.sleep(2)
+                    try:
+                        share_btn.click()
+                    except:
+                        driver.execute_script("arguments[0].click();", share_btn)
+                    print(f"[{uid}] Đã ấn Chia sẻ lên tin thành công!")
+                except Exception as ex:
+                    print(f"[{uid}] Không tìm thấy hoặc không thể click nút Chia sẻ: {ex}")
+                        
+            except Exception as e:
+                print(f"[{uid}] Lỗi khi up story: {e}")
+            
         else:
             print(f"[Thread-{flow_type}] Không thể login, dừng luồng này.")
             return
