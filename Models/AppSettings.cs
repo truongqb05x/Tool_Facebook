@@ -36,5 +36,12 @@ namespace FPlusClone.Models
 
         [JsonPropertyName("loginMethod")]
         public int LoginMethod { get; set; } = 2; // 0: Username/pass, 1: Cookie, 2: Auto
+
+        // --- Telegram ---
+        [JsonPropertyName("telegramBotToken")]
+        public string TelegramBotToken { get; set; } = "";
+
+        [JsonPropertyName("telegramChatId")]
+        public string TelegramChatId { get; set; } = "";
     }
 }

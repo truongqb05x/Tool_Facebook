@@ -341,23 +341,32 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
             if is_logged_in:
                 pass # Session cũ vẫn còn hiệu lực
             else:
-                # print(f"[{uid}]  Session hết hạn/chưa có (hoặc sai UA). Tiến hành nạp cookie mới...")
-                # driver.delete_all_cookies() # Đã ẩn để tránh clear profile vô ích
-                # print(f"[{uid}]  Đang nạp {len(actual_cookies)} cookie từ file account (Sẽ thêm Expiry 1 năm)...")
-                
-                # Tính toán expiry: 1 năm kể từ hiện tại
-                expiry_time = int(time.time()) + (365 * 24 * 3600)
-                
-                for cookie_dict in actual_cookies:
-                    try: 
-                        cookie_dict["domain"] = ".facebook.com"
-                        cookie_dict["path"] = "/"
-                        cookie_dict["expiry"] = expiry_time # Ép persistent
-                        driver.add_cookie(cookie_dict)
-                    except Exception as e_cook:
-                        pass
-                driver.refresh()
-                time.sleep(8)
+                login_method = 0
+                try:
+                    settings_path = os.path.join(os.path.dirname(os.getcwd()), "settings.json")
+                    if os.path.exists(settings_path):
+                        with open(settings_path, "r", encoding="utf-8") as f:
+                            settings_data = json.load(f)
+                            login_method = settings_data.get("loginMethod", 0)
+                except:
+                    pass
+
+                if login_method == 1 or login_method == 2:
+                    # Tính toán expiry: 1 năm kể từ hiện tại
+                    expiry_time = int(time.time()) + (365 * 24 * 3600)
+                    
+                    for cookie_dict in actual_cookies:
+                        try: 
+                            cookie_dict["domain"] = ".facebook.com"
+                            cookie_dict["path"] = "/"
+                            cookie_dict["expiry"] = expiry_time # Ép persistent
+                            driver.add_cookie(cookie_dict)
+                        except Exception as e_cook:
+                            pass
+                    driver.refresh()
+                    time.sleep(8)
+                else:
+                    print(f"[{uid}] Cài đặt LoginMethod là Username/Pass, bỏ qua nạp Cookie.")
     
             # Check status sau khi nạp (hoặc dùng session cũ)
             current_url = safe_url(driver)

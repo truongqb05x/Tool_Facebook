@@ -220,6 +220,38 @@
                                       VerticalAlignment="Center"/>
                         </Grid>
 
+                        <!-- ══ SECTION 4: Telegram Options ══ -->
+                        <TextBlock Text="Cấu hình Telegram"
+                                   FontSize="15" FontWeight="Bold" Foreground="#1a73e8"
+                                   Margin="0,20,0,4"/>
+                        <Separator Background="#e8f0fe" Margin="0,0,0,16"/>
+
+                        <!-- Bot Token -->
+                        <StackPanel Margin="0,0,0,16">
+                            <TextBlock Text="Telegram Bot Token" FontSize="12"
+                                       FontWeight="SemiBold" Foreground="#202124"/>
+                            <TextBlock Text="Mã token của bot (vd: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)"
+                                       FontSize="11" Foreground="#5f6368" Margin="0,2,0,4"/>
+                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White">
+                                <TextBox Text="{Binding TelegramBotToken, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="8,6" FontSize="12" BorderThickness="0"
+                                         VerticalContentAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Chat ID -->
+                        <StackPanel Margin="0,0,0,4">
+                            <TextBlock Text="Telegram Chat ID" FontSize="12"
+                                       FontWeight="SemiBold" Foreground="#202124"/>
+                            <TextBlock Text="ID của group hoặc user (vd: -1001234567890)"
+                                       FontSize="11" Foreground="#5f6368" Margin="0,2,0,4"/>
+                            <Border BorderBrush="#dadce0" BorderThickness="1" Background="White">
+                                <TextBox Text="{Binding TelegramChatId, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="8,6" FontSize="12" BorderThickness="0"
+                                         VerticalContentAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+
                     </StackPanel>
         </ScrollViewer>
 

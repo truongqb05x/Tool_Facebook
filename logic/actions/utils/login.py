@@ -405,8 +405,20 @@ def verify_and_relogin(driver, uid, cfg):
             print(f"[{uid}] Đăng nhập lại bằng Username/Password...")
             res = login_with_credentials(driver, uid, password, fa2_secret=fa2)
 
-        if not res:
+        if not res or res in ["BLOCKED_LOGIN", "INVALID_REQUEST"]:
             print(f"[{uid}] Đăng nhập lại thất bại, bỏ qua task này.")
+            
+
+            msg = (
+                f"🚨 <b>THÔNG BÁO TÀI KHOẢN DIE</b> 🚨\n\n"
+                f"👤 <b>UID:</b> <code>{uid}</code>"
+            )
+            try:
+                from utils.bot_telegram import send_telegram_message
+                send_telegram_message(msg)
+            except Exception as e:
+                print(f"[{uid}] Không thể gửi thông báo Telegram: {e}")
+
             return False
         print(f"[{uid}] Đăng nhập lại thành công!")
         

@@ -66,6 +66,12 @@ namespace FPlusClone.Views
         private int _loginMethod;
         public int LoginMethod { get => _loginMethod; set => SetProperty(ref _loginMethod, value); }
 
+        private string _telegramBotToken;
+        public string TelegramBotToken { get => _telegramBotToken; set => SetProperty(ref _telegramBotToken, value); }
+
+        private string _telegramChatId;
+        public string TelegramChatId { get => _telegramChatId; set => SetProperty(ref _telegramChatId, value); }
+
         // ── Commands ────────────────────────────────────────────────
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
@@ -112,6 +118,8 @@ namespace FPlusClone.Views
             GetCookieOnLogin = s.GetCookieOnLogin;
             ProfilePath      = s.ProfilePath;
             LoginMethod      = s.LoginMethod;
+            TelegramBotToken = s.TelegramBotToken;
+            TelegramChatId   = s.TelegramChatId;
 
             SaveCommand = new RelayCommand(_ =>
             {
@@ -126,8 +134,11 @@ namespace FPlusClone.Views
                     DisableImageLoad = DisableImageLoad,
                     GetCookieOnLogin = GetCookieOnLogin,
                     ProfilePath      = ProfilePath ?? "",
-                    LoginMethod      = LoginMethod
+                    LoginMethod      = LoginMethod,
+                    TelegramBotToken = TelegramBotToken ?? "",
+                    TelegramChatId   = TelegramChatId ?? ""
                 });
+
                 DialogResult = true;
                 RequestClose?.Invoke();
             });

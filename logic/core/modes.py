@@ -278,6 +278,18 @@ def run_cli():
                                 print(f" Lỗi khi Reset DCOM: {e}")
                 
                 print(f" Đã chạy xong 1 vòng ({len(current_cookies)} tài khoản). Nghỉ 600s trước khi lặp lại từ đầu...")
+                
+                try:
+                    from utils.bot_telegram import send_telegram_message
+                    msg = (
+                        f"✅ <b>HOÀN TẤT NUÔI TÀI KHOẢN</b> ✅\n\n"
+                        f"🔄 <b>Vòng lặp:</b> {cycle_count}\n"
+                        f"👥 <b>Số lượng:</b> {len(current_cookies)} tài khoản"
+                    )
+                    send_telegram_message(msg)
+                except Exception as e:
+                    pass
+
                 time.sleep(600)
                 cycle_count += 1
                 
