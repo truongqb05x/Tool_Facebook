@@ -506,7 +506,7 @@
 
                 <StackPanel Grid.Column="1" Margin="10,0,0,0">
                     <Button Content="Thêm Tài Khoản" Command="{Binding ShowImportAccountCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,5"/>
-                    <Button Content="Login Chrome" Command="{Binding LoginChromeCommand}" CommandParameter="{Binding ElementName=dgAccounts, Path=SelectedItems}" Style="{StaticResource ModernButton}" Margin="0,0,0,5" Background="{DynamicResource PrimaryBlueBrush}" Foreground="White" BorderThickness="0"/>
+                    <Button Content="{Binding ViewModeButtonText}" Command="{Binding ToggleViewModeCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,5" Background="{DynamicResource PrimaryBlueBrush}" Foreground="White" BorderThickness="0"/>
                     <Button Content="Import Từ File" Command="{Binding ImportFromFileCommand}" Style="{StaticResource ModernButton}" Margin="0,0,20,5"/>
 
                     <Button Content="⚙  Cài đặt" Command="{Binding ShowSettingsCommand}"

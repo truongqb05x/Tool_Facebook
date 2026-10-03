@@ -1,10 +1,17 @@
+import os
+import random
+import json
 from actions.utils.read_notifications import read_one_random_notification
 from actions.utils.chat_two_ways import run_two_way_chat
 from actions.utils.login import verify_and_relogin
-import os
-import random
 from config.config import TARGET_UIDS, FALLBACK_TOKEN
-from utils.file_utils import get_valid_tokens_from_accounts
+from utils.file_utils import get_valid_tokens_from_accounts, remove_token_from_accounts
+from actions.utils.chapnhan_add import accept_friends
+from actions.utils.add_frend import add_suggested_friends
+from actions.utils.story.up_story import up_story, can_up_story, record_story
+from actions.utils.story.view_story import view_story
+from actions.utils.reels import watch_reels
+from actions.utils.Post import can_post, record_post, post_manual_content, get_random_post
 def execute_warmup_task(task_name, driver, uid, cfg):    
     if not verify_and_relogin(driver, uid, cfg):
         return
@@ -14,14 +21,12 @@ def execute_warmup_task(task_name, driver, uid, cfg):
         run_two_way_chat(driver, uid, task_config=cfg)
     elif task_name == "accept_friend":
         try:
-            from actions.utils.chapnhan_add import accept_friends
             print(f"[{uid}] Chấp nhận 1 lời mời kết bạn...")
             accept_friends(driver, uid, 1)
         except Exception as e:
             print(f"[{uid}] Lỗi khi chạy Chấp nhận kết bạn: {e}")
     elif task_name == "add_friend_suggested":
         try:
-            from actions.utils.add_frend import add_suggested_friends
             count = int(cfg.get("AddFriendSuggestedCount", 5))
             print(f"[{uid}] Kết bạn từ gợi ý ({count} người)...")
             add_suggested_friends(driver, uid, count)
@@ -29,7 +34,6 @@ def execute_warmup_task(task_name, driver, uid, cfg):
             print(f"[{uid}] Lỗi khi chạy Kết bạn gợi ý: {e}")
     elif task_name == "up_story":
         try:
-            from actions.utils.story.up_story import up_story, can_up_story, record_story
             allowed, reason = can_up_story(uid)
             if not allowed:
                 print(f"[{uid}] ⏭ Bỏ qua Đăng Story: {reason}")
@@ -43,14 +47,12 @@ def execute_warmup_task(task_name, driver, uid, cfg):
             print(f"[{uid}] Lỗi khi chạy Đăng Story: {e}")
     elif task_name == "view_story":
         try:
-            from actions.utils.story.view_story import view_story
             print(f"[{uid}] Chạy chức năng Xem Story...")
             view_story(driver, uid)
         except Exception as e:
             print(f"[{uid}] Lỗi khi chạy Xem Story: {e}")
     elif task_name == "watch_reel":
         try:
-            from actions.utils.reels import watch_reels
             print(f"[{uid}] Chạy chức năng Xem Reels...")
             reel_min = int(cfg.get("ReelTimeMin", 15))
             reel_max = int(cfg.get("ReelTimeMax", 30))
@@ -64,8 +66,6 @@ def execute_warmup_task(task_name, driver, uid, cfg):
             print(f"[{uid}] Lỗi khi chạy Xem Reels: {e}")
     elif task_name == "post":
         try:
-            from actions.utils.Post import can_post, record_post, post_manual_content, get_random_post
-            import json
             allowed, skip_reason = can_post(uid)
             if not allowed:
                 print(f"[{uid}] ⏭ Bỏ qua đăng bài: {skip_reason}")
@@ -84,7 +84,6 @@ def execute_warmup_task(task_name, driver, uid, cfg):
                 is_tag = post_config.get("IsTagFriends", True)
                 post_success = False
                 if mode == 1:
-                    import random
                     content = None
                     txt_path = post_config.get("ContentPath", "")
                     img_path = post_config.get("ImagePath", "")
@@ -124,7 +123,6 @@ def execute_warmup_task(task_name, driver, uid, cfg):
                                 break
                             else:
                                 print(f"[{uid}] Token lỗi, tiến hành xóa token này...")
-                                from utils.file_utils import remove_token_from_accounts
                                 remove_token_from_accounts(accounts_path, acc_obj.get("Uid"))
                     if post_data:
                         print(f"[{uid}] Bài viết lấy được từ API: {post_data['message'][:30]}...")

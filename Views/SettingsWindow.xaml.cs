@@ -63,6 +63,9 @@ namespace FPlusClone.Views
         private string _profilePath;
         public string ProfilePath { get => _profilePath; set => SetProperty(ref _profilePath, value); }
 
+        private int _loginMethod;
+        public int LoginMethod { get => _loginMethod; set => SetProperty(ref _loginMethod, value); }
+
         // ── Commands ────────────────────────────────────────────────
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
@@ -108,6 +111,7 @@ namespace FPlusClone.Views
             DisableImageLoad = s.DisableImageLoad;
             GetCookieOnLogin = s.GetCookieOnLogin;
             ProfilePath      = s.ProfilePath;
+            LoginMethod      = s.LoginMethod;
 
             SaveCommand = new RelayCommand(_ =>
             {
@@ -121,7 +125,8 @@ namespace FPlusClone.Views
                     KiotProxyKey     = KiotProxyKey ?? "",
                     DisableImageLoad = DisableImageLoad,
                     GetCookieOnLogin = GetCookieOnLogin,
-                    ProfilePath      = ProfilePath ?? ""
+                    ProfilePath      = ProfilePath ?? "",
+                    LoginMethod      = LoginMethod
                 });
                 DialogResult = true;
                 RequestClose?.Invoke();

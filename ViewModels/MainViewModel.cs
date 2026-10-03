@@ -165,6 +165,7 @@ namespace FPlusClone.ViewModels
         public ICommand ShowTokenCommand { get; }
         public ICommand ToggleDebugConsoleCommand { get; }
         public ICommand ShowImportAccountCommand { get; }
+        public ICommand ToggleViewModeCommand { get; }
         public ICommand ImportFromFileCommand { get; }
         public ICommand DeleteFolderCommand { get; }
         public ICommand DeleteSelectedAccountsCommand { get; }
@@ -175,6 +176,58 @@ namespace FPlusClone.ViewModels
         public ICommand ShowSettingsCommand { get; }
         public ICommand LoginChromeCommand { get; }
         public ICommand ViewInChromeCommand { get; }
+
+        private bool _isShowingDeletedAccounts;
+        public bool IsShowingDeletedAccounts
+        {
+            get => _isShowingDeletedAccounts;
+            set
+            {
+                if (SetProperty(ref _isShowingDeletedAccounts, value))
+                {
+                    OnPropertyChanged(nameof(ViewModeButtonText));
+                    LoadDataForCurrentView();
+                }
+            }
+        }
+
+        public string ViewModeButtonText => IsShowingDeletedAccounts ? "Tài khoản chính" : "Tài khoản đã xóa";
+
+        private void LoadDataForCurrentView()
+        {
+            _isBulkOperation = true;
+            try
+            {
+                if (IsShowingDeletedAccounts)
+                {
+                    if (File.Exists(_backupFilePath))
+                    {
+                        var raw = File.ReadAllText(_backupFilePath);
+                        var records = JsonSerializer.Deserialize<List<DeletedAccountRecord>>(raw) ?? new List<DeletedAccountRecord>();
+                        
+                        var deletedAccs = new ObservableCollection<FacebookAccount>();
+                        foreach (var r in records)
+                        {
+                            if (r.Account != null) deletedAccs.Add(r.Account);
+                        }
+                        foreach (var acc in deletedAccs) acc.IsSelected = false;
+                        Accounts = deletedAccs;
+                    }
+                    else
+                    {
+                        Accounts = new ObservableCollection<FacebookAccount>();
+                    }
+                }
+                else
+                {
+                    LoadAccounts(); 
+                }
+            }
+            finally
+            {
+                _isBulkOperation = false;
+            }
+        }
 
         public MainViewModel()
         {
@@ -246,7 +299,6 @@ namespace FPlusClone.ViewModels
                     OnPropertyChanged(nameof(IsAccountTabSelected));
                 }
             });
-
 
             SearchCommand = new RelayCommand(_ => ItemsView?.Refresh());
 
@@ -345,7 +397,10 @@ namespace FPlusClone.ViewModels
 
                         if (result == System.Windows.MessageBoxResult.Yes)
                         {
-                            BackupDeletedAccounts(itemsToRemove, "Xóa chọn");
+                            if (!IsShowingDeletedAccounts)
+                            {
+                                BackupDeletedAccounts(itemsToRemove, "Xóa chọn");
+                            }
                             _isBulkOperation = true;
                             IsLoading = true;
                             ProgressMessage = "Đang xóa tài khoản...";
@@ -418,7 +473,10 @@ namespace FPlusClone.ViewModels
 
                 if (dialog.Confirmed)
                 {
-                    BackupDeletedAccounts(accountsToDelete, isAllFolder ? "Xóa tất cả" : $"Xóa folder '{SelectedFolder}'");
+                    if (!IsShowingDeletedAccounts)
+                    {
+                        BackupDeletedAccounts(accountsToDelete, isAllFolder ? "Xóa tất cả" : $"Xóa folder '{SelectedFolder}'");
+                    }
                     var settings = Views.SettingsViewModel.Load();
                     string profilePath = settings?.ProfilePath ?? "";
                     
@@ -475,6 +533,11 @@ namespace FPlusClone.ViewModels
                 var vm = new ImportAccountViewModel();
                 vm.AccountsImported += (newAccounts) => MergeAccounts(newAccounts.ToList());
                 new Views.ImportAccountWindow(vm) { Owner = System.Windows.Application.Current.MainWindow }.ShowDialog();
+            });
+
+            ToggleViewModeCommand = new RelayCommand(_ =>
+            {
+                IsShowingDeletedAccounts = !IsShowingDeletedAccounts;
             });
 
             ImportFromFileCommand = new RelayCommand(_ =>
@@ -588,8 +651,35 @@ namespace FPlusClone.ViewModels
             if (_isBulkOperation) return;
             try
             {
-                var state = new AppDataState { Accounts = Accounts, Folders = Folders };
-                File.WriteAllText(_filePath, JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true }));
+                if (IsShowingDeletedAccounts)
+                {
+                    if (File.Exists(_backupFilePath))
+                    {
+                        var raw = File.ReadAllText(_backupFilePath);
+                        var existingRecords = JsonSerializer.Deserialize<List<DeletedAccountRecord>>(raw) ?? new List<DeletedAccountRecord>();
+                        
+                        var recordsToKeep = new List<DeletedAccountRecord>();
+                        foreach (var acc in Accounts)
+                        {
+                            var existing = existingRecords.FirstOrDefault(r => r.Account?.Uid == acc.Uid);
+                            if (existing != null)
+                            {
+                                existing.Account = acc;
+                                recordsToKeep.Add(existing);
+                            }
+                            else
+                            {
+                                recordsToKeep.Add(new DeletedAccountRecord { Account = acc, DeletedAt = DateTime.Now, Reason = "Edited" });
+                            }
+                        }
+                        File.WriteAllText(_backupFilePath, JsonSerializer.Serialize(recordsToKeep, new JsonSerializerOptions { WriteIndented = true }));
+                    }
+                }
+                else
+                {
+                    var state = new AppDataState { Accounts = Accounts, Folders = Folders };
+                    File.WriteAllText(_filePath, JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true }));
+                }
             }
             catch (Exception ex) { Log($"Error saving data: {ex.Message}"); }
         }

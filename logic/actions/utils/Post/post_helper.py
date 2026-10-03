@@ -3,9 +3,8 @@
 post_helper.py — Tiện ích click dùng chung cho toàn bộ module Post.
 """
 import time
-import random
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.common.action_chains import ActionChains
 # Script click React-safe (mousedown + mouseup + click event)
 REACT_CLICK_SCRIPT = """
 var el = arguments[0];
@@ -21,7 +20,6 @@ def do_click(driver, uid, xpath, fallback_texts=None):
     Thử click phần tử theo XPath trong vòng tối đa 60s.
     Thứ tự ưu tiên: ActionChains → JS click → JS tìm span bằng text.
     """
-    from selenium.webdriver.common.action_chains import ActionChains
     end_time = time.time() + 60
     while time.time() < end_time:
         try:

@@ -6,7 +6,7 @@ import time
 import random
 from selenium.webdriver.common.by import By
 from .post_helper import do_click, REACT_CLICK_SCRIPT
-
+from selenium.webdriver.common.action_chains import ActionChains
 
 def ensure_public_audience(driver, uid):
     """
@@ -14,7 +14,6 @@ def ensure_public_audience(driver, uid):
     Nếu chưa phải Công khai → mở modal → chọn Công khai → tick mặc định → click Xong.
     """
     print(f"[Account-{uid}] Kiểm tra đối tượng hiện tại của bài viết...")
-    from selenium.webdriver.common.action_chains import ActionChains
 
     already_public = False
     try:

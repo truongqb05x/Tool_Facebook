@@ -336,14 +336,75 @@ def verify_and_relogin(driver, uid, cfg):
         acc_infos = cfg.get("SelectedAccountsInfo", [])
         password = ""
         fa2 = ""
+        cookie_str = ""
         for line in acc_infos:
             parts = line.split("|")
             if len(parts) > 0 and parts[0] == uid:
                 if len(parts) > 1: password = parts[1]
-                if len(parts) > 2: fa2 = parts[2]
+                if len(parts) > 2:
+                    for p in parts[2:]:
+                        p = p.strip()
+                        if "c_user=" in p or "sb=" in p or "datr=" in p or ";" in p:
+                            cookie_str = p
+                        elif p.isalnum() and len(p) >= 10:
+                            fa2 = p
                 break
         
-        res = login_with_credentials(driver, uid, password, fa2_secret=fa2)
+        login_method = 0
+        try:
+            settings_path = os.path.join(os.path.dirname(os.getcwd()), "settings.json")
+            if os.path.exists(settings_path):
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    settings_data = json.load(f)
+                    login_method = settings_data.get("loginMethod", 0)
+        except Exception:
+            pass
+
+        res = False
+        if login_method == 1 or login_method == 2:
+            if cookie_str:
+                print(f"[{uid}] Đăng nhập lại bằng Cookie...")
+                driver.delete_all_cookies()
+                expiry_time = int(time.time()) + (365 * 24 * 3600)
+                for c in cookie_str.split(";"):
+                    c = c.strip()
+                    if not c: continue
+                    if "=" in c:
+                        k, v = c.split("=", 1)
+                        k = k.strip()
+                        v = v.strip()
+                        if k.lower() != "useragent":
+                            try:
+                                driver.add_cookie({
+                                    "name": k,
+                                    "value": v,
+                                    "domain": ".facebook.com",
+                                    "path": "/",
+                                    "expiry": expiry_time
+                                })
+                            except Exception: pass
+                driver.refresh()
+                time.sleep(5)
+                curr_url_after = driver.current_url or ""
+                cookies_after = driver.get_cookies()
+                if any(c['name'] == 'c_user' for c in cookies_after) and "login" not in curr_url_after and "checkpoint" not in curr_url_after:
+                    res = True
+                
+                if not res:
+                    print(f"[{uid}] Login Cookie thất bại.")
+                    if login_method == 2:
+                        print(f"[{uid}] Chuyển sang Username/Password (Chế độ Tự động)...")
+                        res = login_with_credentials(driver, uid, password, fa2_secret=fa2)
+            else:
+                if login_method == 1:
+                    print(f"[{uid}] Đã chọn Login Cookie nhưng không tìm thấy cookie cho tài khoản này.")
+                elif login_method == 2:
+                    print(f"[{uid}] Không có cookie, chuyển sang Username/Password (Chế độ Tự động)...")
+                    res = login_with_credentials(driver, uid, password, fa2_secret=fa2)
+        else:
+            print(f"[{uid}] Đăng nhập lại bằng Username/Password...")
+            res = login_with_credentials(driver, uid, password, fa2_secret=fa2)
+
         if not res:
             print(f"[{uid}] Đăng nhập lại thất bại, bỏ qua task này.")
             return False

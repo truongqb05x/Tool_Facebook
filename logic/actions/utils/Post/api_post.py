@@ -5,15 +5,14 @@ api_post.py — Lấy bài viết ngẫu nhiên từ Facebook Graph API.
 import os
 import time
 import random
+import requests
 
-
-def get_random_post(target_uid: str, access_token: str, limit: int = 10):
+def get_random_post(target_uid: str, access_token: str, limit: int = 20):
     """
     Gọi Graph API lấy danh sách bài của target_uid,
     chọn ngẫu nhiên 1 bài, tải ảnh về temp_images/.
     Trả về dict {id, message, image_path, permalink_url} hoặc None.
     """
-    import requests
     url = f"https://graph.facebook.com/v23.0/{target_uid}/posts"
     params = {
         "access_token": access_token,

@@ -33,5 +33,8 @@ namespace FPlusClone.Models
 
         [JsonPropertyName("getCookieOnLogin")]
         public bool GetCookieOnLogin { get; set; } = false;
+
+        [JsonPropertyName("loginMethod")]
+        public int LoginMethod { get; set; } = 2; // 0: Username/pass, 1: Cookie, 2: Auto
     }
 }

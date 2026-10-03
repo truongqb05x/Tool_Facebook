@@ -5,7 +5,7 @@ content.py — Nhập nội dung văn bản vào ô soạn thảo bài đăng.
 import time
 import random
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.common.action_chains import ActionChains
 
 def type_content(driver, uid, post_content=None):
     """Nhập nội dung bài viết vào textbox contenteditable."""
@@ -21,7 +21,6 @@ def type_content(driver, uid, post_content=None):
         return
 
     try:
-        from selenium.webdriver.common.action_chains import ActionChains
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", tb)
         time.sleep(0.5)
         ActionChains(driver).move_to_element(tb).click().perform()

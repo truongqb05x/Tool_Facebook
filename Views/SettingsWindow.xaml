@@ -171,6 +171,25 @@
                                    Margin="0,20,0,4"/>
                         <Separator Background="#e8f0fe" Margin="0,0,0,16"/>
 
+                        <!-- Phương thức đăng nhập -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Phương thức đăng nhập" FontSize="12"
+                                           FontWeight="SemiBold" Foreground="#202124"/>
+                                <TextBlock Text="Cách đăng nhập Facebook"
+                                           FontSize="11" Foreground="#5f6368" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <ComboBox Grid.Column="1" Width="150" SelectedIndex="{Binding LoginMethod}" VerticalAlignment="Center">
+                                <ComboBoxItem Content="Username/Password"/>
+                                <ComboBoxItem Content="Cookie"/>
+                                <ComboBoxItem Content="Tự động (Cookie -> Pass)"/>
+                            </ComboBox>
+                        </Grid>
+
                         <!-- Tắt load ảnh -->
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
