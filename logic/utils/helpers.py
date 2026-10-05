@@ -63,6 +63,11 @@ def normalize_url(url: str):
         return ""
 
 
+# Danh sách các checkpoint cứng (tài khoản die, không thể vượt qua)
+HARD_CHECKPOINT_IDS = {
+    "828281030927956",
+}
+
 # Danh sách các checkpoint "nhẹ" (tạm thời) - chỉ bỏ qua, KHÔNG xóa tài khoản
 SOFT_CHECKPOINT_IDS = {
     "601051028565049",  
@@ -71,6 +76,20 @@ SOFT_CHECKPOINT_IDS = {
 def is_checkpoint(driver):
     """Kiểm tra xem hiện tại có ở trang checkpoint không"""
     url = normalize_url(safe_url(driver))
+    
+    # Kiểm tra ngay nếu nằm trong danh sách checkpoint cứng đã biết
+    for cp_id in HARD_CHECKPOINT_IDS:
+        if cp_id in url:
+            if not getattr(driver, "_hard_cp_notified", False):
+                try:
+                    from utils.bot_telegram import send_telegram_message
+                    msg = f"🚨 <b>PHÁT HIỆN CHECKPOINT</b> 🚨\n\n🌐 <b>ID:</b> <code>{cp_id}</code>\n🔗 <b>URL:</b> {url}"
+                    send_telegram_message(msg)
+                    driver._hard_cp_notified = True
+                except Exception as e:
+                    print(f"Lỗi gửi tele: {e}")
+            return True
+            
     if "checkpoint" in url or "suspended" in url:
         return True
     try:

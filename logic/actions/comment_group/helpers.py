@@ -51,7 +51,7 @@ def close_obstructing_modals(driver, uid):
     except Exception as e:
         print(f"[{uid}] Lỗi đóng modal: {e}")
 
-def check_comment_status_after_post(driver, uid):
+def check_comment_status_after_post(driver, uid, is_edit_comment="no"):
     """
     Kiểm tra sau khi gửi comment:
     - Modal chặn tính năng (Feature Block)
@@ -137,11 +137,24 @@ def check_comment_status_after_post(driver, uid):
                 time.sleep(2)
                 
             if not edit_opts:
-                print(f"[{uid}] ❌ Không có tùy chọn 'Chỉnh sửa' sau 3 lần click. Comment có thể đã bị từ chối hoặc đang chờ duyệt.")
+                print(f"[{uid}] ❌ [DEBUG] Không có tùy chọn 'Chỉnh sửa' sau 3 lần click. Comment có thể đã bị từ chối hoặc đang chờ duyệt.")
                 return "BLOCK_EDIT_DETECTED"
             else:
-                ActionChains(driver).send_keys(Keys.ESCAPE).perform()
-                time.sleep(1)
+                if is_edit_comment == "yes":
+                    print(f"[{uid}] 🔄 [DEBUG] Đã tìm thấy nút Chỉnh sửa. Đang click...")
+                    try:
+                        edit_opts[0].click()
+                        print(f"[{uid}] ✅ [DEBUG] Đã click nút Chỉnh sửa thành công (Native click).")
+                    except Exception as e_click:
+                        print(f"[{uid}] ⚠️ [DEBUG] Lỗi Native click Chỉnh sửa: {e_click}, thử lại bằng JS...")
+                        driver.execute_script("arguments[0].click();", edit_opts[0])
+                        print(f"[{uid}] ✅ [DEBUG] Đã click nút Chỉnh sửa thành công (JS click).")
+                    
+                    time.sleep(3)
+                else:
+                    print(f"[{uid}] 🔄 [DEBUG] Không bật chế độ sửa comment, nhấn ESCAPE để đóng menu...")
+                    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+                    time.sleep(1)
         else:
             print(f"[{uid}] ⚠️ Không tìm thấy nút menu của comment sau {timeout}s. Có thể đã bị từ chối/chờ duyệt.")
             return "BLOCK_EDIT_DETECTED"

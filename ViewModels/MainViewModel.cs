@@ -932,17 +932,35 @@ namespace FPlusClone.ViewModels
                 // -----------------------------
 
                 string cookieFile = Path.Combine(resourcesDir, "account.txt");
+                var accountLines = new List<string>();
                 var sb = new StringBuilder();
                 foreach (var acc in selected)
                 {
-                    sb.AppendLine(FormatAccountSimple(acc, "Full"));
+                    string accStr = FormatAccountSimple(acc, "Full");
+                    sb.AppendLine(accStr);
+                    accountLines.Add(accStr);
                 }
                 File.WriteAllText(cookieFile, sb.ToString());
+
+                var fullConfig = new
+                {
+                    SelectedAccounts = selected.Select(a => a.Uid).ToList(),
+                    SelectedAccountsInfo = accountLines,
+                    ProxyMethod = settings.ProxyMethod,
+                    ProxyList = proxyList,
+                    KiotProxyKey = settings.KiotProxyKey ?? "",
+                    ProfilePath = settings.ProfilePath ?? "",
+                    IsResetDcom = false,
+                    ResetDcomAfter = 2
+                };
+                string jsonConfig = System.Text.Json.JsonSerializer.Serialize(fullConfig);
+                string configPath = Path.Combine(logicDir, "view_chrome_config.json");
+                File.WriteAllText(configPath, jsonConfig);
 
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "python",
-                    Arguments = $"main.py {mode}",
+                    Arguments = $"-u main.py {mode} view_chrome_config.json",
                     WorkingDirectory = logicDir,
                     UseShellExecute = false,
                     CreateNoWindow = true

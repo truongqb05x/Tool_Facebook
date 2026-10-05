@@ -17,21 +17,8 @@ from utils.helpers import (
     is_logged_out
 )
 from actions.utils.like_actions import random_like_post
-from actions.join_groups import join_single_group
-
-import string
 from .helpers import generate_auto_comment, close_obstructing_modals, check_comment_status_after_post
 from .post_parser import extract_post_info
-
-
-
-
-
-
-
-
-
-
 
 def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_config=None, comment_index=0):
     if is_logged_out(driver):
@@ -478,40 +465,29 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                 time.sleep(5)
                             
                             # ===== KIỂM TRA BỊ CHẶN / CHỜ DUYỆT =====
-                            _status = check_comment_status_after_post(driver, uid)
+                            _status = check_comment_status_after_post(driver, uid, is_edit_comment)
                             is_success = True
                             if _status in ("BLOCK_MODAL_DETECTED", "BLOCK_EDIT_DETECTED", "MEMBERSHIP_MODAL"):
                                 is_success = False
                             
                             if is_edit_comment == "yes" and is_success:
                                 try:
-                                    safe_search_text = content.split('\n')[0].strip()[:30]
-                                    if not safe_search_text: safe_search_text = "Check inbox nhé"
-                                    comment_text_xpath = f"//*[contains(text(), '{safe_search_text}')]"
-                                    posted_comment = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, comment_text_xpath)))
-                                    
-                                    actions = ActionChains(driver)
-                                    actions.move_to_element(posted_comment).perform()
-                                    time.sleep(1)
-                                    
-                                    menu_xpath = "//div[@aria-label='Chỉnh sửa hoặc xóa bình luận này' or @aria-label='Edit or delete this comment']"
-                                    menu_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, menu_xpath)))
-                                    menu_btn.click()
-                                    time.sleep(2)
-                                    
-                                    edit_xpath = "//span[contains(text(), 'Chỉnh sửa') or contains(text(), 'Edit')]"
-                                    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, edit_xpath))).click()
-                                    time.sleep(3)
-                                    
+                                    print(f"[{uid}] 🔍 [DEBUG] Đang truy cập ô sửa comment (active_element)...")
+                                    # check_comment_status_after_post đã tự động click nút Chỉnh sửa nếu có cài đặt
                                     box = driver.switch_to.active_element
+                                    print(f"[{uid}] 🔍 [DEBUG] Tag name của ô sửa: {box.tag_name}")
+                                    
+                                    print(f"[{uid}] 🔍 [DEBUG] Bắt đầu bôi đen và xóa...")
                                     box.send_keys(Keys.CONTROL, "a")
                                     box.send_keys(Keys.BACKSPACE)
                                     time.sleep(1)
+                                    print(f"[{uid}] ✅ [DEBUG] Đã xóa nội dung cũ thành công.")
                                     
                                     new_content = "Check inbox nhé"
                                     if task_config:
                                         new_content = target_edit_content
                                     
+                                    print(f"[{uid}] 🔄 [DEBUG] Bắt đầu gõ nội dung mới...")
                                     type_human_like(driver, new_content, element=box)
                                     time.sleep(1)
                                     box.send_keys(Keys.ENTER)
@@ -720,7 +696,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 time.sleep(5)
 
             # ===== KIỂM TRA BỊ CHẶN / CHỜ DUYỆT (LINK MODE) =====
-            _status = check_comment_status_after_post(driver, uid)
+            _status = check_comment_status_after_post(driver, uid, is_edit_comment)
             if _status in ("BLOCK_MODAL_DETECTED", "BLOCK_EDIT_DETECTED"):
                 return _status
             if _status == "MEMBERSHIP_MODAL":
@@ -731,38 +707,24 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
             if is_edit_comment == "yes":
                 try:
                     print(f"[{uid}] 🔄 Đang bắt đầu quy trình Sửa & Re-comment (Bulk Content)...")
-                    # 1. Tìm comment vừa đăng (theo nội dung vừa gõ)
-                    safe_search_text = content.split('\n')[0].strip()[:30]
-                    if not safe_search_text: safe_search_text = "Check inbox nhé"
-                    comment_text_xpath = f"//*[contains(text(), '{safe_search_text}')]"
-                    posted_comment = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, comment_text_xpath)))
                     
-                    # Hover & Click Menu
-                    actions = ActionChains(driver)
-                    actions.move_to_element(posted_comment).perform()
-                    time.sleep(1)
-                    
-                    menu_xpath = "//div[@aria-label='Chỉnh sửa hoặc xóa bình luận này' or @aria-label='Edit or delete this comment']"
-                    menu_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, menu_xpath)))
-                    menu_btn.click()
-                    time.sleep(2)
-                    
-                    # Click Chỉnh sửa
-                    edit_xpath = "//span[contains(text(), 'Chỉnh sửa') or contains(text(), 'Edit')]"
-                    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, edit_xpath))).click()
-                    time.sleep(3)
-                    
+                    print(f"[{uid}] 🔍 [DEBUG] Đang truy cập ô sửa comment (active_element)...")
                     # Xóa cũ, nhập mới qua active_element
                     box = driver.switch_to.active_element
+                    print(f"[{uid}] 🔍 [DEBUG] Tag name của ô sửa: {box.tag_name}")
+                    
+                    print(f"[{uid}] 🔍 [DEBUG] Bắt đầu bôi đen và xóa...")
                     box.send_keys(Keys.CONTROL, "a")
                     box.send_keys(Keys.BACKSPACE)
                     time.sleep(1)
+                    print(f"[{uid}] ✅ [DEBUG] Đã xóa nội dung cũ thành công.")
                     
                     # LẤY TOÀN BỘ NỘI DUNG FILE ĐÍCH Hoặc TỪ CONFIG
                     new_content = "Check inbox nhé" # Fallback
                     if task_config:
                         new_content = target_edit_content
                     
+                    print(f"[{uid}] 🔄 [DEBUG] Bắt đầu gõ nội dung mới...")
                     type_human_like(driver, new_content, element=box)
                     time.sleep(1)
                     box.send_keys(Keys.ENTER)

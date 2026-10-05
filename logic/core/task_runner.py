@@ -20,9 +20,7 @@ from utils.helpers import (
     is_checkpoint, is_soft_checkpoint, safe_url, cleanup_seleniumwire
 )
 from utils.driver_utils import create_driver, load_proxies
-from utils.file_utils import read_file
 from config import config
-from utils.scan_group import get_joined_groups
 
 # Modular imports
 from utils.locks import FILE_LOCK
@@ -33,15 +31,7 @@ from utils.account_registry import (
     load_kiot_mapping, get_assigned_kiot
 )
 from utils.kiot_proxy import get_new_kiot_proxy, parse_kiot_proxy_string
-from core.automation_service import process_group_cycle, process_keyword_search, process_page_cycle, process_ttc_cycle
-from actions.feed_actions import warm_up_account
 from actions.utils.login import login_with_credentials
-from actions.join_groups import join_single_group
-from actions.out_group import out_groups_by_mode
-from actions.TTC.get_job import fetch_ttc_jobs
-from actions.utils.read_notifications import read_one_random_notification
-from actions.utils.chat_two_ways import run_two_way_chat
-
 
 from core.globals import *
 from utils.helpers import get_profile_path
@@ -160,13 +150,13 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                         proxy_str = kiot_proxy_str
                         # print(f"[{uid}]  [Settings] Sử dụng KiotProxy từ cài đặt: {kiot_proxy_str[:30]}...")
             else:  # proxy_method == 0 hoặc không xác định → không dùng proxy
-                proxy_config = None
-                proxy_str = None
+                proxy_config = "DIRECT"
+                proxy_str = "DIRECT"
                 proxy_field = ""  # Đặt proxy_field rỗng để bỏ qua fallback phía dưới
                 # print(f"[{uid}]  [Settings] Không sử dụng proxy (Direct connection).")
         
         # Chỉ xử lý proxy theo cách cũ nếu chưa được gán từ Settings UI
-        if not (execution_mode == 1 and task_config and task_config.get("ProxyMethod", 0) in (0, 1, 2)):
+        if task_config and task_config.get("ProxyMethod", 0) in (0, 1, 2):
             pass  # Đã xử lý bên trên
         elif not proxy_config and proxy_field:
             if ":" not in proxy_field and len(proxy_field) > 10:
@@ -219,7 +209,7 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                 # Static proxy provided from UI
                 proxy_str = proxy_field
                 proxy_config = parse_proxy_str(proxy_str)
-        elif not (execution_mode == 1 and task_config):
+        elif not task_config:
             # Fallback to old file mapping if no proxy passed from UI (chế độ cũ)
             kiot_keys = []
             kiot_file = getattr(config, "KIOT_FILE", "resources/kiot.txt")
@@ -305,6 +295,16 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                 user_agent=user_agent
             )
             
+            if execution_mode == 6:
+                print(f"[{uid}]  [Mode 6] Đang giữ Chrome mở. Đóng cửa sổ để kết thúc.")
+                try:
+                    while True:
+                        _ = driver.window_handles
+                        time.sleep(2)
+                except Exception:
+                    print(f"[{uid}]  [Mode 6] Trình duyệt đã đóng.")
+                return True
+            
             # --- SMART LOGIN LOGIC ---
             driver.get("https://www.facebook.com/")
             # print(f"[{uid}]  Đang kiểm tra trạng thái login tại: {driver.current_url}")
@@ -343,11 +343,15 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
             else:
                 login_method = 0
                 try:
-                    settings_path = os.path.join(os.path.dirname(os.getcwd()), "settings.json")
-                    if os.path.exists(settings_path):
-                        with open(settings_path, "r", encoding="utf-8") as f:
-                            settings_data = json.load(f)
-                            login_method = settings_data.get("loginMethod", 0)
+                    curr = os.getcwd()
+                    for _ in range(4):
+                        candidate = os.path.join(curr, "settings.json")
+                        if os.path.exists(candidate):
+                            with open(candidate, "r", encoding="utf-8") as f:
+                                settings_data = json.load(f)
+                                login_method = settings_data.get("loginMethod", 0)
+                            break
+                        curr = os.path.dirname(curr)
                 except:
                     pass
 
@@ -386,6 +390,12 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                     print(f"[{uid}]  PHÁT HIỆN CHECKPOINT CỨNG -> Dừng tài khoản.")
                     print(f"[{uid}] UI_STATUS|Die")
                     print(f"[{uid}] UI_REMOVE|{uid}")
+                    try:
+                        from utils.bot_telegram import send_telegram_message
+                        msg = f"🚨 <b>PHÁT HIỆN CHECKPOINT CỨNG</b> 🚨\n\n👤 <b>UID:</b> <code>{uid}</code>\n🔗 <b>URL:</b> {current_url}"
+                        send_telegram_message(msg)
+                    except:
+                        pass
                     is_dead = True
                     return False
     
@@ -493,6 +503,12 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                         print(f"[{uid}]  Đã thử lại nhưng vẫn thất bại. Đang xóa tài khoản...")
                         #print(f"[{uid}] UI_STATUS|Die")
                         #print(f"[{uid}] UI_LOGIN_FAILED")
+                        try:
+                            from utils.bot_telegram import send_telegram_message
+                            msg = f"🚨 <b>THÔNG BÁO TÀI KHOẢN DIE (LỖI LOGIN)</b> 🚨\n\n👤 <b>UID:</b> <code>{uid}</code>"
+                            send_telegram_message(msg)
+                        except:
+                            pass
                         is_dead = True
                         if execution_mode != 6: return False
                 else:
@@ -510,6 +526,12 @@ def run_account_task(cookie_line, thread_index, max_comments, is_edit_comment="y
                     print(f"[{uid}]  Đã thử lại nhưng vẫn thất bại. Đang xóa tài khoản...")
                     #print(f"[{uid}] UI_STATUS|Die")
                     print(f"[{uid}] UI_LOGIN_FAILED")
+                    try:
+                        from utils.bot_telegram import send_telegram_message
+                        msg = f"🚨 <b>THÔNG BÁO TÀI KHOẢN DIE (LỖI LOGIN)</b> 🚨\n\n👤 <b>UID:</b> <code>{uid}</code>"
+                        send_telegram_message(msg)
+                    except:
+                        pass
                     is_dead = True
                     if execution_mode != 6: return False
             

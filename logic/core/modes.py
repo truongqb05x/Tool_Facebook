@@ -83,20 +83,6 @@ def run_cli():
                 is_edit_comment = "yes" if task_config.get("EditAfterPost") else "no"
 
         MAX_THREADS = max_threads 
-
-        # print("\n" + "="*50)
-        # print("          FB TOOLS - CHỌN CHẾ ĐỘ CHẠY")
-        # print("="*50)
-        # print("1. Spam Comment Groups")
-        # print("3. Nuôi Tài Khoản")
-        # print("4. Spam Comment Keyword")
-        # print("5. Join Groups theo danh sách")
-        # print("7. Rời nhóm")
-        # print("8. Comment ID Page")
-        # print("9. Comment bài viết (TTC)")
-        # print("10. Upload Avatar")
-        # print("="*50)
-        
         if len(sys.argv) > 1:
             # print(f"👉 Chế độ được truyền qua đối số: {choice}")
             if task_config:
@@ -283,8 +269,8 @@ def run_cli():
                     from utils.bot_telegram import send_telegram_message
                     msg = (
                         f"✅ <b>HOÀN TẤT NUÔI TÀI KHOẢN</b> ✅\n\n"
-                        f"🔄 <b>Vòng lặp:</b> {cycle_count}\n"
-                        f"👥 <b>Số lượng:</b> {len(current_cookies)} tài khoản"
+                        f"<b>Vòng lặp:</b> {cycle_count}\n"
+                        f" <b>Số lượng:</b> {len(current_cookies)} tài khoản"
                     )
                     send_telegram_message(msg)
                 except Exception as e:
@@ -324,19 +310,14 @@ def run_cli():
                 batch_id += 1
                 if batch_id > 0:
                     print("UI_CLEAR_LOG")
-            
-            print("\n" + "="*50)
-            print(" HOÀN THÀNH CHẾ ĐỘ CREATE PROFILE & CHECK LIVE")
-            print(f" Tổng số tài khoản: {total_acc}")
-            print(f" Thành công (Live): {success_count}")
-            print(f" Đã bỏ qua (Đã có sẵn): {skip_count}")
-            print(f" Thất bại (Checkpoint/Die): {fail_count}")
-            print("="*50)
-            sys.exit(0)
-            
+                        
         elif choice == "6":
             # MODE 6: OPEN PROFILE ONLY
-            current_cookies = read_file(config.COOKIE_FILE)
+            if task_config and task_config.get("SelectedAccountsInfo"):
+                current_cookies = task_config.get("SelectedAccountsInfo")
+            else:
+                current_cookies = read_file(config.COOKIE_FILE)
+            
             if not current_cookies:
                 print(" Danh sách tài khoản trống.")
                 sys.exit(0)
@@ -388,7 +369,7 @@ def run_cli():
                     futures = []
                     for idx, cookie in enumerate(batch):
                         slot_index = idx % max_threads
-                        futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=6, cycle_count=proxy_turn))
+                        futures.append(executor.submit(run_account_task, cookie, slot_index, max_limit, is_edit_comment, execution_mode=6, cycle_count=proxy_turn, task_config=task_config))
                     for f in futures:
                         f.result()
                 batch_id += 1
@@ -399,14 +380,7 @@ def run_cli():
             sys.exit(0)
 
         elif choice == "7":
-            # MODE 7: OUT GROUP
-            print("\n" + "-"*30)
-            print("CHẾ ĐỘ RỜI NHÓM (OUT GROUP)")
-            print("1. Rời TẤT CẢ các nhóm")
-            print("2. Rời nhóm THEO DANH SÁCH ID")
-            print("3. Rời nhóm NGOẠI TRỪ DANH SÁCH ID")
-            print("-"*30)
-            
+
             og_mode = "1"
             og_list = []
             
@@ -456,23 +430,12 @@ def run_cli():
             sys.exit(0)
 
         elif choice == "8":
-            # MODE 8: COMMENT ID PAGE
-            print("\n" + "-"*40)
-            print(" CHẾ ĐỘ 8: COMMENT ID PAGE")
-            print("-"*40)
-            print(" File danh sách page: resources/id_pages.txt")
-            print(" Mỗi dòng 1 ID hoặc username page.")
-            print("-"*40)
-
             if task_config:
                 page_comment_mode = task_config.get("PageCommentMode", "text")
                 page_list = task_config.get("PageList", [])
                 delete_page_after_comment = task_config.get("IsDeleteAfterComment", True)
                 current_cookies = task_config.get("SelectedAccountsInfo", [])
             else:
-                print("\n Chọn kiểu comment:")
-                print("  1. Comment bằng TXT (nội dung từ edit_stt.txt)")
-                print("  2. Comment bằng ẢNH (từ thư mục resources/images/)")
                 try:
                     cm_choice = input("👉 Nhập lựa chọn (1/2): ").strip()
                 except:

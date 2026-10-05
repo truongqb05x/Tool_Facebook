@@ -398,17 +398,6 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             
         return result
 
-    if execution_mode == 6:
-        print(f"[{uid}]  MODE 6: Đã mở Profile và xác minh Login. Trình duyệt sẽ được giữ nguyên.")
-        print(f"[{uid}]  Vui lòng thao tác thủ công. Đóng trình duyệt để kết thúc luồng này.")
-        try:
-            while True:
-                # Kiểm tra xem trình duyệt còn mở không
-                _ = driver.window_handles
-                time.sleep(5)
-        except Exception:
-            print(f"[{uid}]  Trình duyệt đã đóng. Kết thúc luồng.")
-        return True
 
     if execution_mode == 1 and task_config:
         # print(f"[{uid}]  Sử dụng cấu hình từ UI...")

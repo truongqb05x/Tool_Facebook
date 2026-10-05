@@ -159,8 +159,6 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
 
             # Trang 2FA → nhập mã TOTP
             if is_two_step:
-                print(f"[{username}] Phát hiện trang 2FA!")
-                
                 # Kiểm tra lỗi modal "Invalid request"
                 try:
                     invalid_request = driver.find_elements(By.XPATH, "//div[contains(text(), 'We could not validate your request') or contains(text(), 'Invalid request')]")
@@ -174,28 +172,35 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
                         return "INVALID_REQUEST"
                 except Exception:
                     pass
-                if fa2_secret:
+
+                # Tìm ô nhập 2FA trước khi xác nhận đây là trang cần xử lý mã
+                otp_input = None
+                for xp in [
+                    "//input[@id='approvals_code']",
+                    "//input[@name='approvals_code']",
+                    "//input[@id='recovery_code_entry']",
+                    "//input[@type='text' and @autocomplete='one-time-code']",
+                    "//input[@type='text'][@autocomplete='off']",
+                ]:
                     try:
-                        import pyotp
-                        totp = pyotp.TOTP(fa2_secret)
-                        code = totp.now()
-                        print(f"[{username}] Mã 2FA: {code}")
+                        els = driver.find_elements(By.XPATH, xp)
+                        for el in els:
+                            if el.is_displayed():
+                                otp_input = el
+                                break
+                        if otp_input: break
+                    except: pass
 
-                        time.sleep(random.uniform(1.5, 3.0))
-                        otp_input = None
-                        for xp in [
-                            "//input[@type='text'][@autocomplete='off']",
-                            "//input[@id='_r_3_']",
-                            "//input[@type='text']",
-                        ]:
-                            els = driver.find_elements(By.XPATH, xp)
-                            for el in els:
-                                if el.is_displayed():
-                                    otp_input = el
-                                    break
-                            if otp_input: break
+                if otp_input:
+                    print(f"[{username}] Phát hiện form nhập mã 2FA!")
+                    if fa2_secret:
+                        try:
+                            import pyotp
+                            clean_secret = fa2_secret.replace(' ', '').replace('-', '').upper()
+                            totp = pyotp.TOTP(clean_secret)
+                            code = totp.now()
+                            print(f"[{username}] Mã 2FA: {code}")
 
-                        if otp_input:
                             driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth', block:'center'});", otp_input)
                             time.sleep(random.uniform(0.5, 1.2))
                             ActionChains(driver).move_to_element(otp_input).click().perform()
@@ -228,19 +233,14 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
                             else:
                                 driver.execute_script("document.querySelector('form').submit();")
                                 print(f"[{username}] Fallback: submit form 2FA.")
-                        else:
-                            print(f"[{username}] Không tìm thấy ô nhập mã 2FA!")
-                    except ImportError:
-                        print(f"[{username}] Thiếu thư viện pyotp! Chạy: pip install pyotp")
-                    except Exception as e2fa:
-                        print(f"[{username}] Lỗi xử lý 2FA: {e2fa}")
-                        return "INVALID_REQUEST"
-                else:
-                    two_fa_no_secret_count += 1
-                    print(f"[{username}] Trang 2FA xuất hiện nhưng không có fa2_secret.")
-                    if two_fa_no_secret_count >= 2:
-                        print(f"[{username}] ❌ Tài khoản yêu cầu 2FA nhưng không có fa2_secret. Dừng login.")
-                        return False
+                        except ImportError:
+                            print(f"[{username}] Thiếu thư viện pyotp! Chạy: pip install pyotp")
+                        except Exception as e2fa:
+                            print(f"[{username}] Lỗi xử lý 2FA (có thể sai định dạng secret): {e2fa}. Vẫn chờ bạn tự xác nhận...")
+                    else:
+                        two_fa_no_secret_count += 1
+                        if two_fa_no_secret_count == 1 or two_fa_no_secret_count % 10 == 0:
+                            print(f"[{username}] Trang 2FA yêu cầu mã nhưng không có fa2_secret. Đang chờ bạn tự xác nhận...")
                 continue  # tiếp tục poll sau khi xử lý 2FA
 
             is_checkpoint = check_checkpoint(driver)
@@ -264,10 +264,9 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
                     print(f"[{username}] ✅ Login thành công.")
                     break
 
-        # 6. Sau khi success → đổi ngôn ngữ + check modal "Nhớ mật khẩu"
+        # 6. Sau khi success → check modal "Nhớ mật khẩu" + về trang chủ + đổi ngôn ngữ
         if success:
-            check_and_change_language_to_vi(driver, username)
-            time.sleep(random.uniform(2.0, 4.0))
+            time.sleep(random.uniform(3.0, 5.0))
 
             # Kiểm tra modal "Nhớ mật khẩu" và click OK nếu có
             try:
@@ -301,7 +300,13 @@ def login_with_credentials(driver, username, password, fa2_secret=None):
             except Exception as e_mk:
                 pass  # modal không bắt buộc, bỏ qua lỗi
 
-            time.sleep(6)
+            print(f"[{username}] Chuyển về trang chủ để kiểm tra ngôn ngữ...")
+            driver.get("https://www.facebook.com/")
+            time.sleep(random.uniform(4.0, 6.0))
+
+            check_and_change_language_to_vi(driver, username)
+            time.sleep(random.uniform(2.0, 4.0))
+
             return True
 
         # Hết 60s hoặc gặp checkpoint → thử soft checkpoint
@@ -352,11 +357,15 @@ def verify_and_relogin(driver, uid, cfg):
         
         login_method = 0
         try:
-            settings_path = os.path.join(os.path.dirname(os.getcwd()), "settings.json")
-            if os.path.exists(settings_path):
-                with open(settings_path, "r", encoding="utf-8") as f:
-                    settings_data = json.load(f)
-                    login_method = settings_data.get("loginMethod", 0)
+            curr = os.getcwd()
+            for _ in range(4):
+                candidate = os.path.join(curr, "settings.json")
+                if os.path.exists(candidate):
+                    with open(candidate, "r", encoding="utf-8") as f:
+                        settings_data = json.load(f)
+                        login_method = settings_data.get("loginMethod", 0)
+                    break
+                curr = os.path.dirname(curr)
         except Exception:
             pass
 
@@ -423,12 +432,17 @@ def verify_and_relogin(driver, uid, cfg):
         print(f"[{uid}] Đăng nhập lại thành công!")
         
         try:
-            settings_path = os.path.join(os.path.dirname(os.getcwd()), "settings.json")
             get_cookie = False
-            if os.path.exists(settings_path):
-                with open(settings_path, "r", encoding="utf-8") as f:
-                    settings_data = json.load(f)
-                    get_cookie = settings_data.get("getCookieOnLogin", False)
+            curr = os.getcwd()
+            for _ in range(4):
+                candidate = os.path.join(curr, "settings.json")
+                if os.path.exists(candidate):
+                    with open(candidate, "r", encoding="utf-8") as f:
+                        settings_data = json.load(f)
+                        get_cookie = settings_data.get("getCookieOnLogin", False)
+                    break
+                curr = os.path.dirname(curr)
+            
             if get_cookie:
                 print(f"[{uid}] Đang lấy cookie mới và lưu vào accounts.json...")
                 cookies = driver.get_cookies()
