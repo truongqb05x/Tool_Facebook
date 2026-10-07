@@ -69,6 +69,9 @@ namespace FPlusClone.Models
         private string _passEmail;
         public string PassEmail { get => _passEmail; set { if (_passEmail != value) { _passEmail = value; OnPropertyChanged(); } } }
 
+        private string _recoveryEmail;
+        public string RecoveryEmail { get => _recoveryEmail; set { if (_recoveryEmail != value) { _recoveryEmail = value; OnPropertyChanged(); } } }
+
         private string _twoFA;
         public string TwoFA { get => _twoFA; set { if (_twoFA != value) { _twoFA = value; OnPropertyChanged(); } } }
 

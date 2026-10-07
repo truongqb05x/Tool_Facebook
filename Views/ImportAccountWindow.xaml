@@ -143,7 +143,6 @@
                     <DataGridTextColumn Header="None2" Binding="{Binding Col6}" Width="100" Visibility="{Binding DataContext.SelectedMappings[6], RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource MappingToVisibilityConverter}}"/>
                     <DataGridTextColumn Header="None3" Binding="{Binding Col7}" Width="100" Visibility="{Binding DataContext.SelectedMappings[7], RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource MappingToVisibilityConverter}}"/>
                     <DataGridTextColumn Header="None4" Binding="{Binding Col8}" Width="100" Visibility="{Binding DataContext.SelectedMappings[8], RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource MappingToVisibilityConverter}}"/>
-                    <DataGridTextColumn Header="None5" Binding="{Binding Col9}" Width="100" Visibility="{Binding DataContext.SelectedMappings[9], RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource MappingToVisibilityConverter}}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

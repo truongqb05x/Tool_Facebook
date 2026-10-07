@@ -481,6 +481,7 @@
                             <DataGridTextColumn Header="Token" Binding="{Binding Token}" Width="100"/>
                             <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="100"/>
                             <DataGridTextColumn Header="PassEmail" Binding="{Binding PassEmail}" Width="100"/>
+                            <DataGridTextColumn Header="Mail khôi phục" Binding="{Binding RecoveryEmail}" Width="100"/>
                             <DataGridTextColumn Header="2FA" Binding="{Binding TwoFA}" Width="60"/>
                             <DataGridTextColumn Header="Proxy" Binding="{Binding Proxy}" Width="100"/>
                             <DataGridTextColumn Header="UserAgent" Binding="{Binding UserAgent}" Width="120"/>

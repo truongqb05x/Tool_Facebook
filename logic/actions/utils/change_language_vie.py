@@ -48,7 +48,7 @@ def check_and_change_language_to_vi(driver, username):
         print(f"[{username}] ⚠️ Không thể click vào phần tử: {fallback_texts if fallback_texts else xpath}")
         raise Exception("Timeout click")
 
-    max_retries = 3
+    max_retries = 1
     for attempt in range(max_retries):
         try:
             current_lang = driver.execute_script("return document.documentElement.lang;")

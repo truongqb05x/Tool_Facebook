@@ -71,11 +71,11 @@ namespace FPlusClone.ViewModels
         {
             ColumnOptions = new ObservableCollection<string>
             {
-                "None", "UID", "Pass", "Cookie", "Token", "Email", "PassEmail", "2FA", "Proxy", "UserAgent", "Note"
+                "UID", "Pass", "Cookie", "Token", "Email", "PassEmail", "Mail khôi phục", "2FA", "Note"
             };
 
             SelectedMappings = new ObservableCollection<MappingOption>();
-            var initialValues = new[] { "UID", "Pass", "Cookie", "Token", "Email", "PassEmail", "2FA", "Proxy", "UserAgent", "None" };
+            var initialValues = new[] { "UID", "Pass", "Cookie", "Token", "Email", "PassEmail", "Mail khôi phục", "2FA", "Note" };
             foreach (var val in initialValues)
             {
                 var opt = new MappingOption { SelectedValue = val };
@@ -122,10 +122,9 @@ namespace FPlusClone.ViewModels
                     row.Col3 = acc.Token;
                     row.Col4 = acc.Email;
                     row.Col5 = acc.PassEmail;
-                    row.Col6 = acc.TwoFA;
-                    row.Col7 = acc.Proxy;
-                    row.Col8 = acc.UserAgent;
-                    row.Col9 = acc.Note;
+                    row.Col6 = acc.RecoveryEmail;
+                    row.Col7 = acc.TwoFA;
+                    row.Col8 = acc.Note;
                 }
                 else
                 {
@@ -180,19 +179,40 @@ namespace FPlusClone.ViewModels
                 }
             }
 
-            // 2. Identify Email and PassEmail
+            // 2. Identify Email, PassEmail and RecoveryEmail
             for (int i = 0; i < parts.Count; i++)
             {
                 if (usedIndices.Contains(i)) continue;
                 string p = parts[i].ToLower();
-                if (p.Contains("@hotmail") || p.Contains("@outlook") || p.Contains("@gmail"))
+                if (p.Contains("@"))
                 {
-                    acc.Email = parts[i];
-                    usedIndices.Add(i);
-                    if (i + 1 < parts.Count && !usedIndices.Contains(i + 1) && parts[i+1].Length > 0 && parts[i+1].Length < 30)
+                    if (p.Contains("@hotmail") || p.Contains("@outlook") || p.Contains("@gmail") || p.Contains("@outmail"))
                     {
-                        acc.PassEmail = parts[i + 1];
-                        usedIndices.Add(i + 1);
+                        if (string.IsNullOrEmpty(acc.Email))
+                        {
+                            acc.Email = parts[i];
+                            usedIndices.Add(i);
+                            
+                            // Check if next part is PassEmail. It should not be an email itself (containing both '@' and '.')
+                            if (i + 1 < parts.Count && !usedIndices.Contains(i + 1) && parts[i+1].Length > 0 && parts[i+1].Length < 30)
+                            {
+                                bool nextIsEmail = parts[i+1].Contains("@") && parts[i+1].Contains(".");
+                                if (!nextIsEmail)
+                                {
+                                    acc.PassEmail = parts[i + 1];
+                                    usedIndices.Add(i + 1);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // It's a RecoveryEmail only if it looks like an email (has a dot)
+                        if (string.IsNullOrEmpty(acc.RecoveryEmail) && p.Contains("."))
+                        {
+                            acc.RecoveryEmail = parts[i];
+                            usedIndices.Add(i);
+                        }
                     }
                 }
             }
@@ -219,16 +239,7 @@ namespace FPlusClone.ViewModels
                 }
             }
 
-            // 5. Identify UserAgent
-            for (int i = 0; i < parts.Count; i++)
-            {
-                if (usedIndices.Contains(i)) continue;
-                if (parts[i].Contains("Mozilla/5.0"))
-                {
-                    acc.UserAgent = parts[i];
-                    usedIndices.Add(i);
-                }
-            }
+            // Note: Proxy and UserAgent parsing removed.
 
             // 6. Identify 2FA (heuristic: 16 or 32 chars, alphanumeric, uppercase/digit mostly)
             for (int i = 0; i < parts.Count; i++)
@@ -278,9 +289,8 @@ namespace FPlusClone.ViewModels
                             case "Token": acc.Token = value; break;
                             case "Email": acc.Email = value; break;
                             case "PassEmail": acc.PassEmail = value; break;
+                            case "Mail khôi phục": acc.RecoveryEmail = value; break;
                             case "2FA": acc.TwoFA = value; break;
-                            case "Proxy": acc.Proxy = value; break;
-                            case "UserAgent": acc.UserAgent = value; break;
                             case "Note": acc.Note = value; break;
                         }
                     }

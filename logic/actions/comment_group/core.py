@@ -201,17 +201,30 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 comment_box_found = False
                 is_permalink_fallback = False
                 
+                import re
                 # Hàm kiểm tra thời gian
                 def is_valid_time(pt):
                     pt_lower = pt.lower()
-                    invalid_keywords = ["ngày", "tháng", "năm", "day", "month", "year", "tuần", "week"]
+                    # Invalid keywords
+                    invalid_keywords = ["ngày", "tháng", "năm", "day", "month", "year", "tuần", "week", "hôm qua", "yesterday", "days", "months", "years", "weeks"]
                     for kw in invalid_keywords:
                         if kw in pt_lower:
                             return False
-                    valid_keywords = ["giây", "phút", "giờ", "second", "minute", "hour", "vừa xong", "just now"]
+                    
+                    # Invalid abbreviations: 1d, 2w, 3y
+                    if re.search(r'\b\d+\s*[dwy]\b', pt_lower):
+                        return False
+
+                    # Valid keywords
+                    valid_keywords = ["giây", "phút", "giờ", "second", "minute", "hour", "vừa xong", "just now", "min", "hr", "sec", "mins", "hrs", "secs"]
                     for kw in valid_keywords:
                         if kw in pt_lower:
                             return True
+                            
+                    # Valid abbreviations: 1h, 2m, 5s
+                    if re.search(r'\b\d+\s*[hms]\b', pt_lower):
+                        return True
+
                     return False
                     
                 # Load lịch sử post đã comment
@@ -267,9 +280,8 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             print(f"[{uid}] 🕒 Thời gian đăng: {post_time} | ID: {post_id}")
                             
                             if not is_valid_time(post_time):
-                                print(f"[{uid}] ⏭️ Bỏ qua vì thời gian ({post_time}) không thỏa mãn (chứa ngày/tháng/năm).")
-                                
                                 if post_time == "Không xác định":
+                                    print(f"[{uid}] ⚠️ Thời gian là 'Không xác định', kiểm tra trạng thái trang...")
                                     # 1. Đóng modal nếu có
                                     close_obstructing_modals(driver, uid)
                                     
@@ -287,10 +299,13 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                         driver.get(target_url)
                                         time.sleep(5)
                                         continue
-                                
-                                driver.execute_script("window.scrollBy(0, 400);")
-                                time.sleep(2)
-                                continue
+                                    
+                                    print(f"[{uid}] ⚠️ Tiếp tục thực hiện comment dù thời gian không xác định (có thể do khác ngôn ngữ).")
+                                else:
+                                    print(f"[{uid}] ⏭️ Bỏ qua vì thời gian ({post_time}) không thỏa mãn (chứa ngày/tháng/năm).")
+                                    driver.execute_script("window.scrollBy(0, 400);")
+                                    time.sleep(2)
+                                    continue
                                 
                             if post_id and post_id in commented_posts:
                                 print(f"[{uid}] ⏭️ Bỏ qua vì post_id {post_id} đã được comment trước đó.")
