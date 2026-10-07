@@ -170,29 +170,36 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
         is_first_post_evaluated = True
         
         # --- START DIRECT MODE ---
+        # Xác định nội dung comment cho group này từ CustomGroupCommentsList
+        matched_custom = None
+        if task_config:
+            custom_list = task_config.get("CustomGroupCommentsList", [])
+            for c_item in custom_list:
+                cid = str(c_item.get("GroupId", "")).strip()
+                if cid and (cid == str(group_id).strip() or cid in target_url or cid == g_id):
+                    matched_custom = c_item
+                    break
+
+        # Quyết định chế độ comment
+        is_image_comment = False
+        comment_image_path = None
+        comment_text_content = "Check inbox nhé"  # fallback
+
+        if matched_custom:
+            comment_type = matched_custom.get("CommentType", "Text")
+            if comment_type == "Image":
+                is_image_comment = True
+                comment_image_path = matched_custom.get("ImagePath", "")
+                comment_text_content = matched_custom.get("Content", "")  # caption (tùy chọn)
+                print(f"[{uid}] 🖼️ Chế độ Ảnh cho group {g_id}: {comment_image_path}")
+            else:
+                comment_text_content = matched_custom.get("Content", "") or "Check inbox nhé"
+                print(f"[{uid}] 📝 Chế độ Text cho group {g_id}.")
+        else:
+            print(f"[{uid}] ⚠️ Không tìm thấy cấu hình cho group {g_id}. Bỏ qua.")
+            return False
+
         if True:
-            is_image_comment = False
-            is_image_comment_with_text = False
-            images_dir = "resources/images"
-            if task_config:
-                if task_config.get("IsImageComment"):
-                    is_image_comment = True
-                    images_dir = task_config.get("ImageFolderPath") or "resources/images"
-                    is_image_comment_with_text = task_config.get("IsImageCommentWithText", False)
-                    is_image_comment_auto_generate = task_config.get("IsImageCommentAutoGenerate", False)
-                else:
-                    image_group_uids = task_config.get("ImageGroupUids", [])
-                    if image_group_uids:
-                        is_image_comment = any(item in group_id or item in target_url for item in image_group_uids)
-                        
-                        # Ưu tiên nội dung comment riêng (nếu có)
-                        custom_comments = task_config.get("CustomGroupCommentsList", [])
-                        if custom_comments and any((c.get("GroupId") == group_id or c.get("GroupId") in target_url) for c in custom_comments):
-                            is_image_comment = False
-                            
-                        if is_image_comment:
-                            print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ƯU TIÊN ẢNH (Text Mode)! Sử dụng chế độ comment bằng ảnh.")
-                            images_dir = task_config.get("ImageFolderPath") or "resources/images"
             for attempt in range(2):
                 if attempt > 0:
                     driver.refresh()
@@ -342,40 +349,16 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                             except:
                                 pass
                             
-                            target_edit_content = "Check inbox nhé"
-                            if task_config:
-                                custom_comments = task_config.get("CustomGroupCommentsList", [])
-                                matched_custom_content = None
-                                for c_item in custom_comments:
-                                    if c_item.get("GroupId") == group_id or c_item.get("GroupId") in current_url:
-                                        matched_custom_content = c_item.get("Content", "")
-                                        break
-                                
-                                if matched_custom_content:
-                                    target_edit_content = matched_custom_content
-                                    # Vô hiệu hóa auto generate nếu nhóm này có nội dung riêng
-                                    if task_config.get("IsImageCommentAutoGenerate"):
-                                        is_image_comment_auto_generate = False
-                                        is_image_comment_with_text = True
-                                else:
-                                    comment_list = task_config.get("CommentsList", [])
-                                    if comment_list:
-                                        if task_config.get("IsSequentialComment"):
-                                            idx = comment_index % len(comment_list)
-                                            target_edit_content = comment_list[idx]
-                                        else:
-                                            target_edit_content = random.choice(comment_list)
-
-                                if task_config.get("IsImageCommentAutoGenerate", False) and not matched_custom_content:
-                                    content = generate_auto_comment()
-                                else:
-                                    if is_edit_comment == "yes":
-                                        with FILE_LOCK:
-                                            stt_lines = read_file("resources/stt.txt")
-                                        content = random.choice(stt_lines) if stt_lines else "Up bài giúp b nhé"
-                                    else:
-                                        content = target_edit_content
+                            # Nội dung comment đã được xác định từ matched_custom
+                            target_edit_content = comment_text_content
+                            if is_edit_comment == "yes":
+                                with FILE_LOCK:
+                                    stt_lines = read_file("resources/stt.txt")
+                                content = random.choice(stt_lines) if stt_lines else "Up bài giúp b nhé"
+                            else:
+                                content = comment_text_content
                             time.sleep(random.uniform(2, 5))
+
                             
                             current_url = driver.current_url
                             if "/permalink/" in current_url or "/posts/" in current_url or "story_fbid=" in current_url:
@@ -383,32 +366,31 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                 is_permalink_fallback = True
                                 break
                             
-                            if is_image_comment:
+                            if is_image_comment and is_edit_comment != "yes":
+                                # === CHẾ ĐỘ COMMENT ẢNH (đường dẫn ảnh cụ thể) ===
                                 driver.execute_script("arguments[0].click(); arguments[0].focus();", comment_input)
                                 time.sleep(2)
-                                
-                                if (is_image_comment_with_text or task_config.get("IsImageCommentAutoGenerate", False) or is_edit_comment == "yes") and content:
+
+                                # Gõ caption nếu có
+                                if content:
                                     type_human_like(driver, content, element=comment_input)
                                     time.sleep(2)
-                                
-                                image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
-                                available_images = []
-                                if os.path.exists(images_dir):
-                                    available_images = [os.path.abspath(os.path.join(images_dir, img_f)) for img_f in os.listdir(images_dir) if img_f.lower().endswith(image_extensions)]
-                                if not available_images:
-                                    print(f"[{uid}] ❌ Không có ảnh. Bỏ qua.")
+
+                                # Sử dụng đường dẫn ảnh cụ thể
+                                chosen_image = comment_image_path
+                                if not chosen_image or not os.path.exists(chosen_image):
+                                    print(f"[{uid}] ❌ File ảnh không tồn tại: {chosen_image}. Bỏ qua.")
                                     return False
-                                chosen_image = random.choice(available_images)
-                                
+                                chosen_image = os.path.abspath(chosen_image)
+                                print(f"[{uid}] 🖼️ Đính kèm ảnh: {os.path.basename(chosen_image)}")
+
                                 file_input = None
-                                
                                 try:
                                     parent_form = comment_input.find_element(By.XPATH, "./ancestor::form")
                                     if parent_form:
                                         els = parent_form.find_elements(By.XPATH, ".//input[@type='file']")
                                         if els: file_input = els[0]
                                 except: pass
-                                    
                                 if not file_input:
                                     try:
                                         attach_btn = driver.find_element(By.XPATH, "//div[@aria-label='Đính kèm một ảnh hoặc video' or @aria-label='Attach a photo or video']/ancestor::li//input[@type='file']")
@@ -424,7 +406,7 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                         els = driver.find_elements(By.CSS_SELECTOR, "form[role='presentation'] input[type='file']")
                                         if els: file_input = els[0]
                                     except: pass
-                                
+
                                 if file_input:
                                     file_input.send_keys(chosen_image)
                                     submitted = False
@@ -498,16 +480,46 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                                     time.sleep(1)
                                     print(f"[{uid}] ✅ [DEBUG] Đã xóa nội dung cũ thành công.")
                                     
-                                    new_content = "Check inbox nhé"
-                                    if task_config:
-                                        new_content = target_edit_content
+                                    new_content = target_edit_content
+                                    if not new_content and not is_image_comment:
+                                        new_content = "Check inbox nhé"
                                     
                                     print(f"[{uid}] 🔄 [DEBUG] Bắt đầu gõ nội dung mới...")
-                                    type_human_like(driver, new_content, element=box)
-                                    time.sleep(1)
+                                    if new_content:
+                                        type_human_like(driver, new_content, element=box)
+                                        time.sleep(1)
+                                    if is_image_comment:
+                                        chosen_image = comment_image_path
+                                        if chosen_image and os.path.exists(chosen_image):
+                                            chosen_image = os.path.abspath(chosen_image)
+                                            print(f"[{uid}] 🖼️ Đính kèm ảnh trong lúc sửa: {os.path.basename(chosen_image)}")
+                                            file_input = None
+                                            try:
+                                                parent_form = box.find_element(By.XPATH, "./ancestor::form")
+                                                if parent_form:
+                                                    els = parent_form.find_elements(By.XPATH, ".//input[@type='file']")
+                                                    if els: file_input = els[0]
+                                            except: pass
+                                            if not file_input:
+                                                try:
+                                                    els = driver.find_elements(By.CSS_SELECTOR, "form[role='presentation'] input[type='file']")
+                                                    if els: file_input = els[-1] # Lấy cái cuối cùng thường là của edit
+                                                except: pass
+                                            if not file_input:
+                                                try:
+                                                    els = driver.find_elements(By.XPATH, "//input[@type='file']")
+                                                    if els: file_input = els[-1]
+                                                except: pass
+
+                                            if file_input:
+                                                file_input.send_keys(chosen_image)
+                                                time.sleep(10) # Chờ ảnh tải lên
+                                            else:
+                                                print(f"[{uid}] ❌ Không tìm thấy input ảnh lúc sửa.")
+
                                     box.send_keys(Keys.ENTER)
                                     print(f"[{uid}] ✅ Đã sửa comment thành công.")
-                                    time.sleep(3)
+                                    time.sleep(10)
                                 except Exception as e_edit:
                                     print(f"[{uid}] ⚠️ Lỗi quy trình sửa comment: {e_edit}")
                                     is_success = False
@@ -543,48 +555,13 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                 return False
         # --- END DIRECT MODE ---
 
-        # Xác định chế độ comment ảnh (Image Group logic)
-        is_image_comment = False
-        is_image_comment_with_text = False
-        images_dir = "resources/images"
-        if task_config:
-            if task_config.get("IsImageComment"):
-                is_image_comment = True
-                images_dir = task_config.get("ImageFolderPath") or "resources/images"
-                is_image_comment_with_text = task_config.get("IsImageCommentWithText", False)
-            else:
-                image_group_uids = task_config.get("ImageGroupUids", [])
-                if image_group_uids:
-                    is_image_comment = any(item in group_id or item in target_url for item in image_group_uids)
-                    
-                    custom_comments = task_config.get("CustomGroupCommentsList", [])
-                    if custom_comments and any((c.get("GroupId") == group_id or c.get("GroupId") in target_url) for c in custom_comments):
-                        is_image_comment = False
-                        
-                    if is_image_comment:
-                        print(f"[{uid}] 🖼️ PHÁT HIỆN GROUP ƯU TIÊN ẢNH! Sử dụng chế độ comment bằng ảnh.")
-                        images_dir = task_config.get("ImageFolderPath") or "resources/images"
-
-        # Comment logic
+        # Comment logic (permalink fallback)
         post_url = list(collected_links)[0]
         driver.get(post_url)
         time.sleep(5)
-        
-        # 3. Lấy nội dung comment
-        if task_config:
-            if task_config.get("IsImageCommentAutoGenerate", False):
-                content = generate_auto_comment()
-            else:
-                comment_list = task_config.get("CommentsList", [])
-                if comment_list:
-                    if task_config.get("IsSequentialComment"):
-                        idx = comment_index % len(comment_list)
-                        content = comment_list[idx]
-                    else:
-                        content = random.choice(comment_list)
-                else:
-                    content = "Check inbox nhé"
 
+        # Nội dung comment đã được xác định ở matched_custom phía trên
+        content = comment_text_content
 
 
         textbox_xpath = '//div[@role="textbox"]'
@@ -610,33 +587,21 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
             except:
                 pass
 
-            if is_image_comment:
-                # === CHẾ ĐỘ COMMENT ẢNH ===
-                if (is_image_comment_with_text or task_config.get("IsImageCommentAutoGenerate", False) or is_edit_comment == "yes") and content:
+            if is_image_comment and is_edit_comment != "yes":
+                # === CHẾ ĐỘ COMMENT ẢNH (permalink fallback) ===
+                if content:
                     driver.execute_script("arguments[0].focus();", comment_input)
                     time.sleep(1)
                     type_human_like(driver, content, element=comment_input)
                     time.sleep(2)
                     
-                # Bỏ qua hoàn toàn việc click, vì Selenium có thể tương tác trực tiếp với input type=file
-                pass
-
-                # images_dir đã được lấy ở trên
-                image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
-                available_images = []
-                if os.path.exists(images_dir):
-                    available_images = [
-                        os.path.abspath(os.path.join(images_dir, img_f))
-                        for img_f in os.listdir(images_dir)
-                        if img_f.lower().endswith(image_extensions)
-                    ]
-
-                if not available_images:
-                    print(f"[{uid}] ❌ Không có ảnh nào trong thư mục '{images_dir}'. Bỏ qua group này.")
+                # Sử dụng đường dẫn ảnh cụ thể từ config
+                chosen_image = comment_image_path
+                if not chosen_image or not os.path.exists(chosen_image):
+                    print(f"[{uid}] ❌ File ảnh không tồn tại: {chosen_image}. Bỏ qua.")
                     return False
-
-                chosen_image = random.choice(available_images)
-                print(f"[{uid}] 🖼️ Chọn ảnh: {os.path.basename(chosen_image)}")
+                chosen_image = os.path.abspath(chosen_image)
+                print(f"[{uid}] 🖼️ Đính kèm ảnh: {os.path.basename(chosen_image)}")
 
                 # Tìm input[type="file"] đúng của comment bar (tránh nhầm input của ô tạo bài viết)
                 # Ưu tiên tìm trong #focused-state-actions-list (div riêng của comment area)
@@ -735,13 +700,36 @@ def process_group_cycle(driver, uid, group_id, is_edit_comment="yes", task_confi
                     print(f"[{uid}] ✅ [DEBUG] Đã xóa nội dung cũ thành công.")
                     
                     # LẤY TOÀN BỘ NỘI DUNG FILE ĐÍCH Hoặc TỪ CONFIG
-                    new_content = "Check inbox nhé" # Fallback
-                    if task_config:
-                        new_content = target_edit_content
+                    new_content = target_edit_content
+                    if not new_content and not is_image_comment:
+                        new_content = "Check inbox nhé"
                     
                     print(f"[{uid}] 🔄 [DEBUG] Bắt đầu gõ nội dung mới...")
-                    type_human_like(driver, new_content, element=box)
-                    time.sleep(1)
+                    if new_content:
+                        type_human_like(driver, new_content, element=box)
+                        time.sleep(1)
+                    if is_image_comment:
+                        chosen_image = comment_image_path
+                        if chosen_image and os.path.exists(chosen_image):
+                            chosen_image = os.path.abspath(chosen_image)
+                            print(f"[{uid}] 🖼️ Đính kèm ảnh trong lúc sửa (permalink): {os.path.basename(chosen_image)}")
+                            file_input = None
+                            try:
+                                parent_form = box.find_element(By.XPATH, "./ancestor::form")
+                                if parent_form:
+                                    els = parent_form.find_elements(By.XPATH, ".//input[@type='file']")
+                                    if els: file_input = els[0]
+                            except: pass
+                            if not file_input:
+                                try:
+                                    els = driver.find_elements(By.XPATH, "//input[@type='file']")
+                                    if els: file_input = els[-1]
+                                except: pass
+
+                            if file_input:
+                                file_input.send_keys(chosen_image)
+                                time.sleep(10)
+
                     box.send_keys(Keys.ENTER)
                     print(f"[{uid}] ✅ Đã sửa comment thành công.")
                     time.sleep(10)

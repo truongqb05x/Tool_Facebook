@@ -401,7 +401,12 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
 
     if execution_mode == 1 and task_config:
         # print(f"[{uid}]  Sử dụng cấu hình từ UI...")
-        g_list = task_config.get("GroupUids", [])
+        # Lấy danh sách Group ID từ CustomGroupCommentsList (logic mới)
+        custom_list = task_config.get("CustomGroupCommentsList", [])
+        g_list = [c.get("GroupId", "").strip() for c in custom_list if c.get("GroupId", "").strip()]
+        if not g_list:
+            # Fallback: quét group đã tham gia nếu không có custom list
+            g_list = []
         
         if task_config.get("ActionBeforePost"):
             cfg = task_config.get("ConfigBeforePost", {})
@@ -580,10 +585,6 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             #print(f"[{uid}]  Đã thử 5 group nhưng không tìm thấy bài viết phù hợp. Dừng account này.")
             break
         
-        if success_count >= max_comments:
-            print(f"[{uid}]  Đã đạt mục tiêu {max_comments} comment. Đang đổi account...")
-            break
-
         # Sau 3-5 lần thành công -> Nghỉ lâu (Coffee Break)
         if success_count > 0 and success_count % random.randint(3, 5) == 0:
             break_time = random.randint(120, 300)
@@ -597,6 +598,10 @@ def dispatch_execution_mode(driver, wait, uid, execution_mode, max_comments, is_
             delay = random.randint(delay_min, delay_max)
             print(f"[{uid}]  Nghỉ {delay}s...")
             time.sleep(delay)
+            
+        if success_count >= max_comments:
+            print(f"[{uid}]  Đã đạt mục tiêu {max_comments} comment. Đang đổi account...")
+            break
             
     # ACTION SAU KHI HOÀN THÀNH TẤT CẢ POST (HOẶC HẾT GROUP)
     if execution_mode == 1 and task_config and task_config.get("ActionAfterPost"):
